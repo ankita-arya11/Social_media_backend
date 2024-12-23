@@ -1,6 +1,13 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User';
+import {
+  generateOTP,
+  storeOTP,
+  retrieveOTP,
+  client,
+} from '../helpers/handleOtp';
+import { sendEmail } from '../helpers/email';
 
 const router = express.Router();
 
@@ -24,14 +31,8 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const {
-      username,
-      email,
-      password,
-      full_name,
-      profile_picture,
-      other_data,
-    } = req.body;
+    const { username, email, full_name, profile_picture, other_data } =
+      req.body;
 
     try {
       const existingUser = await User.findOne({ where: { email } });
@@ -56,5 +57,67 @@ router.post(
     }
   }
 );
+
+router.post('/send-otp', async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).send({ message: 'Email is required' });
+  }
+
+  const otp = generateOTP();
+  const otpKey = `otp:${email}`;
+
+  try {
+    await storeOTP(otpKey, otp);
+
+    const emailData = {
+      receiver: email,
+      subject: 'Your OTP Code',
+      text: `Your OTP code is: ${otp}`,
+      html: `<p>Your OTP code is: <strong>${otp}</strong></p>`,
+    };
+
+    const isEmailSent = await sendEmail(emailData);
+
+    if (!isEmailSent) {
+      return res.status(500).send({ message: 'Failed to send OTP email' });
+    }
+
+    res.status(200).send({ message: 'OTP sent successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Failed to process OTP request' });
+  }
+});
+
+router.post('/verify-otp', async (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).send({ message: 'Email and OTP are required' });
+  }
+
+  const otpKey = `otp:${email}`;
+
+  try {
+    const storedOtp = await retrieveOTP(otpKey);
+
+    if (!storedOtp) {
+      return res.status(400).send({ message: 'OTP has expired or is invalid' });
+    }
+
+    if (storedOtp !== otp.toString()) {
+      return res.status(400).send({ message: 'Invalid OTP' });
+    }
+
+    await client.del(otpKey);
+
+    res.status(200).send({ message: 'OTP verified successfully' });
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).send({ message: 'Server error' });
+  }
+});
 
 export default router;

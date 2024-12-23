@@ -11,7 +11,7 @@ export type SendEmailPayload = {
   html?: string;
 };
 
-async function sendEmail(data: SendEmailPayload): Promise<boolean> {
+export async function sendEmail(data: SendEmailPayload): Promise<boolean> {
   let isEmailSent = true;
   let transporter: Transporter<SMTPTransport.SentMessageInfo>;
 
@@ -48,5 +48,3 @@ async function sendEmail(data: SendEmailPayload): Promise<boolean> {
   }
   return isEmailSent;
 }
-
-export default { sendEmail };
