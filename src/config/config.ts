@@ -1,4 +1,5 @@
-import { config } from './index';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export interface DBConfig {
   host: string;
@@ -9,15 +10,15 @@ export interface DBConfig {
   port: number;
 }
 
-const DBConfig: { db: DBConfig } = {
+const config = {
   db: {
-    host: config.DB_HOST || 'localhost',
-    username: config.DB_USER || 'postgres',
-    password: config.DB_PASSWORD || 'root',
-    database: config.DB_NAME || 'social_hiteshi',
+    host: process.env.DB_HOST || 'localhost',
+    username: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'root',
+    database: process.env.DB_NAME || 'social_hiteshi',
     dialect: 'postgres',
-    port: config.DB_PORT ? parseInt(config.DB_PORT, 10) : 5432,
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
   },
 };
 
-export default DBConfig;
+export default config;
