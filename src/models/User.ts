@@ -1,33 +1,32 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../db/db';
 
-// Define the interface for the User attributes
 interface UserAttributes {
   id: number;
   username: string;
+  full_name: string;
   email: string;
-  password: string;
+  profile_picture: string;
+  other_data: Record<string, any>;
 }
 
-// Define the interface for the User creation attributes (optional fields)
 interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
 
-// Define the User model class
 class User
   extends Model<UserAttributes, UserCreationAttributes>
   implements UserAttributes
 {
   public id!: number;
   public username!: string;
+  public full_name!: string;
+  public profile_picture!: string;
   public email!: string;
-  public password!: string;
+  public other_data!: Record<string, any>;
 
-  // Optional: Define timestamps if needed
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
 
-// Initialize the User model
 User.init(
   {
     id: {
@@ -40,6 +39,18 @@ User.init(
       allowNull: false,
       unique: true,
     },
+    full_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    profile_picture: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    other_data: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -48,16 +59,12 @@ User.init(
         isEmail: true,
       },
     },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
   },
   {
     sequelize,
     modelName: 'User',
-    tableName: 'users', // Optional: Define the table name explicitly
-    timestamps: true, // Optional: Add timestamps for createdAt and updatedAt
+    tableName: 'users',
+    timestamps: true,
   }
 );
 

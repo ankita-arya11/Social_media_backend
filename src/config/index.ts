@@ -15,6 +15,12 @@ const configSchema = z
     MAIL_PASSWORD: z.string().optional(),
     MAIL_FROM: z.string().optional(),
     MAIL_DISPLAY_NAME: z.string().optional(),
+
+    DB_HOST: z.string().optional(),
+    DB_PORT: z.string().optional(),
+    DB_NAME: z.string().optional(),
+    DB_USER: z.string().optional(),
+    DB_PASSWORD: z.string().optional(),
   })
   .readonly();
 

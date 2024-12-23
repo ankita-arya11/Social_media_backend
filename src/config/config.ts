@@ -1,3 +1,5 @@
+import { config } from './index';
+
 export interface DBConfig {
   host: string;
   username: string;
@@ -7,15 +9,15 @@ export interface DBConfig {
   port: number;
 }
 
-const config: { db: DBConfig } = {
+const DBConfig: { db: DBConfig } = {
   db: {
-    host: process.env.DB_HOST || 'localhost',
-    username: process.env.DB_USER || 'practice_user1',
-    password: process.env.DB_PASSWORD || 'practice_password1',
-    database: process.env.DB_NAME || 'practice_db1',
+    host: config.DB_HOST || 'localhost',
+    username: config.DB_USER || 'postgres',
+    password: config.DB_PASSWORD || 'root',
+    database: config.DB_NAME || 'social_hiteshi',
     dialect: 'postgres',
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
+    port: config.DB_PORT ? parseInt(config.DB_PORT, 10) : 5432,
   },
 };
 
-export default config;
+export default DBConfig;

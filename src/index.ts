@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import express from 'express';
-import authRoutes from './routes/authRoutes';
+// import authRoutes from './routes/authRoutes';
 import sequelize from './db/db';
 
 dotenv.config();
@@ -11,7 +11,7 @@ const PORT = 5000;
 app.use(express.json());
 
 // Routes
-app.use('/auth', authRoutes);
+// app.use('/auth', authRoutes);
 
 // Start the server
 app.listen(PORT, async () => {
@@ -19,7 +19,7 @@ app.listen(PORT, async () => {
   try {
     await sequelize.authenticate();
     console.log('Database connected!');
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ force: true });
     console.log('Database synchronized!');
   } catch (error) {
     console.error('Database connection failed:', error);
