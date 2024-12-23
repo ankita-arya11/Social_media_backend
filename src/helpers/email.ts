@@ -1,7 +1,7 @@
-import nodemailer from 'nodemailer';
-import logger from './logger';
+import nodemailer, { Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
-import Transporter from 'nodemailer/lib/mailer/index';
+import { google } from 'googleapis';
+import logger from './logger';
 import { config } from '../config/';
 
 export type SendEmailPayload = {
@@ -11,24 +11,48 @@ export type SendEmailPayload = {
   html?: string;
 };
 
-export async function sendEmail(data: SendEmailPayload): Promise<boolean> {
-  let isEmailSent = true;
-  let transporter: Transporter<SMTPTransport.SentMessageInfo>;
+const OAuth2 = google.auth.OAuth2;
+
+const createTransporter = async (): Promise<
+  Transporter<SMTPTransport.SentMessageInfo>
+> => {
+  const oauth2Client = new OAuth2(
+    config.EMAIL_CLIENT_ID,
+    config.EMAIL_CLIENT_SECRET,
+    'https://developers.google.com/oauthplayground'
+  );
+
+  oauth2Client.setCredentials({
+    refresh_token: config.EMAIL_REFRESH_TOKEN,
+  });
+
+  const accessToken = await oauth2Client.getAccessToken();
+
+  if (!accessToken.token) {
+    throw new Error('Failed to retrieve access token');
+  }
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      type: 'OAuth2',
+      user: config.USER_EMAIL,
+      accessToken: accessToken.token,
+      clientId: config.EMAIL_CLIENT_ID,
+      clientSecret: config.EMAIL_CLIENT_SECRET,
+      refreshToken: config.EMAIL_REFRESH_TOKEN,
+    },
+  });
+};
+
+export const sendEmail = async (data: SendEmailPayload): Promise<boolean> => {
+  if (!data.text && !data.html) {
+    logger.error('Either text or HTML content must be provided.');
+    return false;
+  }
 
   try {
-    if (!data.text && !data.html) {
-      return false;
-    }
-
-    transporter = nodemailer.createTransport({
-      host: config.MAIL_HOST,
-      port: config.MAIL_PORT,
-      secure: false,
-      auth: {
-        user: config.MAIL_USERNAME,
-        pass: config.MAIL_PASSWORD,
-      },
-    });
+    const transporter = await createTransporter();
 
     await transporter.sendMail({
       from: `${config.MAIL_DISPLAY_NAME} <${config.MAIL_FROM}>`,
@@ -37,14 +61,13 @@ export async function sendEmail(data: SendEmailPayload): Promise<boolean> {
       html: data.html,
       text: data.text,
     });
+
+    logger.info(`Email sent successfully to ${data.receiver}`);
+    return true;
   } catch (error) {
-    logger.error(error);
-    isEmailSent = false;
-  } finally {
-    // @ts-ignore
-    if (transporter !== undefined) {
-      transporter.close();
-    }
+    logger.error(`Failed to send email: ${error}`);
+    return false;
   }
-  return isEmailSent;
-}
+};
+
+export default sendEmail;

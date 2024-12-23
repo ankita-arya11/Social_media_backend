@@ -84,7 +84,12 @@ router.post('/send-otp', async (req: Request, res: Response) => {
       return res.status(500).send({ message: 'Failed to send OTP email' });
     }
 
-    res.status(200).send({ message: 'OTP sent successfully' });
+    const user = await User.findOne({ where: { email } });
+
+    res.status(200).send({
+      message: 'OTP sent successfully',
+      user: user ? true : false,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send({ message: 'Failed to process OTP request' });
@@ -92,7 +97,8 @@ router.post('/send-otp', async (req: Request, res: Response) => {
 });
 
 router.post('/verify-otp', async (req: Request, res: Response) => {
-  const { email, otp } = req.body;
+  const { email, otp, username, full_name, profile_picture, other_data } =
+    req.body;
 
   if (!email || !otp) {
     return res.status(400).send({ message: 'Email and OTP are required' });
@@ -111,9 +117,27 @@ router.post('/verify-otp', async (req: Request, res: Response) => {
       return res.status(400).send({ message: 'Invalid OTP' });
     }
 
+    const user = await User.findOne({ where: { email } });
     await client.del(otpKey);
 
-    res.status(200).send({ message: 'OTP verified successfully' });
+    if (user) {
+      return res.status(200).send({
+        message: 'OTP verified successfully and user created',
+      });
+    }
+
+    const newUser = await User.create({
+      username: username,
+      full_name: full_name,
+      email: email,
+      profile_picture: profile_picture || null,
+      other_data: other_data || null,
+    });
+
+    res.status(200).send({
+      message: 'OTP verified successfully and user created',
+      user: newUser,
+    });
   } catch (error) {
     console.error('Error verifying OTP:', error);
     res.status(500).send({ message: 'Server error' });

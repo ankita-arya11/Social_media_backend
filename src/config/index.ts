@@ -21,6 +21,11 @@ const configSchema = z
     DB_NAME: z.string().optional(),
     DB_USER: z.string().optional(),
     DB_PASSWORD: z.string().optional(),
+
+    EMAIL_CLIENT_SECRET: z.string().optional(),
+    EMAIL_CLIENT_ID: z.string().optional(),
+    EMAIL_REFRESH_TOKEN: z.string().optional(),
+    USER_EMAIL: z.string().optional(),
   })
   .readonly();
 

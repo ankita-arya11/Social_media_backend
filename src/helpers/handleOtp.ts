@@ -20,7 +20,7 @@ export function generateOTP(): number {
 }
 
 export async function storeOTP(userId: string, otp: number): Promise<void> {
-  const expirationTime = 300; // 5 minutes
+  const expirationTime = 300;
 
   try {
     await client.setEx(userId, expirationTime, otp.toString());
@@ -41,7 +41,6 @@ export async function retrieveOTP(userId: string): Promise<string | null> {
   }
 }
 
-// Disconnect Redis client only during app shutdown
 export async function disconnectRedis(): Promise<void> {
   if (client.isOpen) {
     await client.quit();
