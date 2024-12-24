@@ -1,62 +1,9 @@
 import express, { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import User from '../models/User';
-import {
-  generateOTP,
-  storeOTP,
-  retrieveOTP,
-  client,
-} from '../helpers/handleOtp';
+import { generateOTP } from '../helpers/handleOtp';
 import { sendEmail } from '../helpers/email';
+import db from '../models';
 
 const router = express.Router();
-
-router.post(
-  '/signup',
-  [
-    body('username').notEmpty().withMessage('Username is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('password')
-      .isLength({ min: 6 })
-      .withMessage('Password must be at least 6 characters'),
-    body('full_name').notEmpty().withMessage('Full name is required'),
-    body('profile_picture')
-      .optional()
-      .isString()
-      .withMessage('Invalid profile picture URL'),
-  ],
-  async (req: Request, res: Response): Promise<Response> => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { username, email, full_name, profile_picture, other_data } =
-      req.body;
-
-    try {
-      const existingUser = await User.findOne({ where: { email } });
-      if (existingUser) {
-        return res.status(400).json({ error: 'User already exists' });
-      }
-
-      const newUser = await User.create({
-        username,
-        email,
-        full_name,
-        profile_picture,
-        other_data,
-      });
-
-      return res
-        .status(201)
-        .json({ message: 'User created successfully', user: newUser });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Server error' });
-    }
-  }
-);
 
 router.post('/send-otp', async (req: Request, res: Response) => {
   const { email } = req.body;
@@ -66,10 +13,19 @@ router.post('/send-otp', async (req: Request, res: Response) => {
   }
 
   const otp = generateOTP();
-  const otpKey = `otp:${email}`;
 
   try {
-    await storeOTP(otpKey, otp);
+    const user = await db.User.findOne({ where: { email } });
+
+    if (user) {
+      user.otp = otp;
+      await user.save();
+    } else {
+      await db.User.create({
+        email,
+        otp,
+      });
+    }
 
     const emailData = {
       receiver: email,
@@ -84,11 +40,9 @@ router.post('/send-otp', async (req: Request, res: Response) => {
       return res.status(500).send({ message: 'Failed to send OTP email' });
     }
 
-    const user = await User.findOne({ where: { email } });
-
     res.status(200).send({
       message: 'OTP sent successfully',
-      user: user ? true : false,
+      newUser: !user,
     });
   } catch (error) {
     console.error(error);
@@ -97,50 +51,41 @@ router.post('/send-otp', async (req: Request, res: Response) => {
 });
 
 router.post('/verify-otp', async (req: Request, res: Response) => {
-  const { email, otp, username, full_name, profile_picture, other_data } =
+  const { email, otp, username, profile_picture, full_name, other_data } =
     req.body;
 
   if (!email || !otp) {
-    return res.status(400).send({ message: 'Email and OTP are required' });
+    return res.status(400).json({ message: 'Email and OTP are required' });
   }
 
-  const otpKey = `otp:${email}`;
-
   try {
-    const storedOtp = await retrieveOTP(otpKey);
+    const user = await db.User.findOne({ where: { email } });
 
-    if (!storedOtp) {
-      return res.status(400).send({ message: 'OTP has expired or is invalid' });
+    if (!user) {
+      return res.status(400).json({ message: 'User does not exist' });
     }
 
-    if (storedOtp !== otp.toString()) {
-      return res.status(400).send({ message: 'Invalid OTP' });
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    const user = await User.findOne({ where: { email } });
-    await client.del(otpKey);
-
-    if (user) {
-      return res.status(200).send({
-        message: 'OTP verified successfully and user created',
-      });
+    if (username || full_name || profile_picture || other_data) {
+      user.username = username || user.username;
+      user.full_name = full_name || user.full_name;
+      user.profile_picture = profile_picture || user.profile_picture;
+      user.other_data = other_data || user.other_data;
     }
 
-    const newUser = await User.create({
-      username: username,
-      full_name: full_name,
-      email: email,
-      profile_picture: profile_picture || null,
-      other_data: other_data || null,
-    });
+    user.otp = null;
+    await user.save();
 
-    res.status(200).send({
-      message: 'OTP verified successfully and user created',
-      user: newUser,
+    return res.status(200).json({
+      message: 'OTP verified successfully',
+      user,
     });
   } catch (error) {
-    console.error('Error verifying OTP:', error);
-    res.status(500).send({ message: 'Server error' });
+    console.error('Error during OTP verification:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
