@@ -26,6 +26,10 @@ const configSchema = z
     EMAIL_CLIENT_ID: z.string().optional(),
     EMAIL_REFRESH_TOKEN: z.string().optional(),
     USER_EMAIL: z.string().optional(),
+
+    CLOUDINARY_CLOUD_NAME: z.string().optional(),
+    CLOUDINARY_API_KEY: z.string().optional(),
+    CLOUDINARY_API_SECRET: z.string().optional(),
   })
   .readonly();
 

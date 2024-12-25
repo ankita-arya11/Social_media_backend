@@ -1,64 +1,13 @@
-import express, { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import User from '../models/User';
-import { verifyOTP } from '../helpers/handleOtpVerification';
-
-import {
-  generateOTP,
-  storeOTP,
-  retrieveOTP,
-  client,
-} from '../helpers/handleOtp';
+import express, { NextFunction, Request, Response } from 'express';
+import { generateOTP } from '../helpers/handleOtp';
 import { sendEmail } from '../helpers/email';
+import db from '../models';
+import { handleOtpVerification } from '../controllers/handleOtpVerification';
+import upload from '../middlewares/multer';
+import { fileUpload } from '../controllers/fileUpload';
+import { createPost } from '../controllers/postController';
 
 const router = express.Router();
-
-router.post(
-  '/signup',
-  [
-    body('username').notEmpty().withMessage('Username is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('password')
-      .isLength({ min: 6 })
-      .withMessage('Password must be at least 6 characters'),
-    body('full_name').notEmpty().withMessage('Full name is required'),
-    body('profile_picture')
-      .optional()
-      .isString()
-      .withMessage('Invalid profile picture URL'),
-  ],
-  async (req: Request, res: Response): Promise<Response> => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { username, email, full_name, profile_picture, other_data } =
-      req.body;
-
-    try {
-      const existingUser = await User.findOne({ where: { email } });
-      if (existingUser) {
-        return res.status(400).json({ error: 'User already exists' });
-      }
-
-      const newUser = await User.create({
-        username,
-        email,
-        full_name,
-        profile_picture,
-        other_data,
-      });
-
-      return res
-        .status(201)
-        .json({ message: 'User created successfully', user: newUser });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Server error' });
-    }
-  }
-);
 
 router.post('/send-otp', async (req: Request, res: Response) => {
   const { email } = req.body;
@@ -66,12 +15,21 @@ router.post('/send-otp', async (req: Request, res: Response) => {
   if (!email) {
     return res.status(400).send({ message: 'Email is required' });
   }
-
   const otp = generateOTP();
-  const otpKey = `otp:${email}`;
 
   try {
-    await storeOTP(otpKey, otp);
+    const user = await db.User.findOne({ where: { email } });
+    const isNewUser = !(user?.full_name && user?.email);
+
+    if (user) {
+      user.otp = otp;
+      await user.save();
+    } else {
+      await db.User.create({
+        email,
+        otp,
+      });
+    }
 
     const emailData = {
       receiver: email,
@@ -86,11 +44,9 @@ router.post('/send-otp', async (req: Request, res: Response) => {
       return res.status(500).send({ message: 'Failed to send OTP email' });
     }
 
-    const user = await User.findOne({ where: { email } });
-
     res.status(200).send({
       message: 'OTP sent successfully',
-      isNewUser: user ? true : false,
+      isNewUser: isNewUser,
     });
   } catch (error) {
     console.error(error);
@@ -98,7 +54,8 @@ router.post('/send-otp', async (req: Request, res: Response) => {
   }
 });
 
-// Use the helper function for OTP verification
-router.post('/verify-otp', verifyOTP); // The helper function will handle the OTP verification
+router.post('/verify-otp', handleOtpVerification);
+router.post('/upload', upload.single('file'), fileUpload);
+router.post('/create-post', createPost);
 
 export default router;
