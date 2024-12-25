@@ -1,11 +1,14 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express, { Request, Response } from 'express';
 import { generateOTP } from '../helpers/handleOtp';
 import { sendEmail } from '../helpers/email';
 import db from '../models';
 import { handleOtpVerification } from '../controllers/handleOtpVerification';
-import upload from '../middlewares/multer';
 import { fileUpload } from '../controllers/fileUpload';
 import { createPost } from '../controllers/postController';
+import { upload } from '../middlewares/multer';
+import { createComment } from '../controllers/createComment';
+import { likeAndUnlikePost } from '../controllers/likeAndUnlikePost';
+import { getPost } from '../controllers/getPost';
 
 const router = express.Router();
 
@@ -57,5 +60,8 @@ router.post('/send-otp', async (req: Request, res: Response) => {
 router.post('/verify-otp', handleOtpVerification);
 router.post('/upload', upload.single('file'), fileUpload);
 router.post('/create-post', createPost);
+router.post('/create-comment', createComment);
+router.post('/post/like-unlike', likeAndUnlikePost);
+router.post('/get-post/:postId', getPost);
 
 export default router;

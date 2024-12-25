@@ -15,9 +15,16 @@ export const handleOtpVerification = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(400).json({ message: 'User does not exist' });
     }
+
     const num_otp = Number(otp);
     if (user.otp !== num_otp) {
       return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    if (!user.username && (!username || !full_name)) {
+      return res.status(400).json({
+        message: 'Username and Full Name are required for new users',
+      });
     }
 
     if (username || full_name || profile_picture || other_data) {

@@ -1,22 +1,25 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import { uploadToCloudinary } from '../helpers/uploadToCloudinary';
 
 export const createPost = async (req: Request, res: Response) => {
-  const { userId, content, mediaUrl, likesCount, commentsCount } = req.body;
+  const { userId, content, mediaUrl } = req.body;
 
-  if (!userId || !content) {
+  console.log(req.body);
+  console.log(userId, content);
+
+  if (!userId || !content || !mediaUrl) {
     return res
       .status(400)
       .json({ message: 'User ID and content are required' });
   }
-
   try {
     const newPost = await db.Post.create({
       userId,
       content,
       mediaUrl,
-      likesCount: likesCount || 0,
-      commentsCount: commentsCount || 0,
+      likesCount: 0,
+      commentsCount: 0,
     });
 
     return res.status(201).json({

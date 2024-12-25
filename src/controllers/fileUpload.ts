@@ -8,15 +8,15 @@ export const fileUpload = async (req: Request, res: Response) => {
     }
 
     const folderName = 'images';
-    const filePath = req.file.path;
+    const file = req.file;
 
-    console.log('File uploaded at path:', filePath);
+    console.log('File uploaded at:', file.originalname);
 
-    const uploadResult = await uploadToCloudinary(filePath, folderName);
+    const uploadResult = await uploadToCloudinary(file, folderName);
 
     res.status(200).json({
       message: 'File uploaded successfully',
-      data: uploadResult,
+      mediaUrl: uploadResult.url,
     });
   } catch (error) {
     console.error('File Upload Error:', error);
