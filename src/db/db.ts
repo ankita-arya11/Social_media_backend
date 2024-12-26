@@ -1,18 +1,18 @@
 import { Sequelize, Dialect } from 'sequelize';
-import config, { DBConfig } from '../config/config';
+import config from '../config/config';
 
-// Destructure the database configuration from the config file
-const { database, username, password, host, dialect, port }: DBConfig =
-  config.db;
+const sequelize = new Sequelize(
+  config.db.database,
+  config.db.username,
+  config.db.password,
+  {
+    host: config.db.host,
+    dialect: config.db.dialect as Dialect,
+    port: config.db.port,
+    logging: console.log,
+  }
+);
 
-// Initialize Sequelize with the database configuration
-const sequelize = new Sequelize(database, username, password, {
-  host,
-  dialect,
-  port,
-});
-
-// Test the database connection
 const testDbConnection = async (): Promise<void> => {
   try {
     await sequelize.authenticate();

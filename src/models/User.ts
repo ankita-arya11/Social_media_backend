@@ -1,33 +1,38 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../db/db';
 
-// Define the interface for the User attributes
 interface UserAttributes {
   id: number;
-  username: string;
+  username: string | null;
+  full_name: string | null;
   email: string;
-  password: string;
+  profile_picture: string | null;
+  otp: number | null;
+  other_data: Record<string, any> | null;
 }
 
-// Define the interface for the User creation attributes (optional fields)
-interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
+interface UserCreationAttributes
+  extends Optional<
+    UserAttributes,
+    'id' | 'username' | 'full_name' | 'profile_picture' | 'otp' | 'other_data'
+  > {}
 
-// Define the User model class
 class User
   extends Model<UserAttributes, UserCreationAttributes>
   implements UserAttributes
 {
   public id!: number;
-  public username!: string;
+  public username!: string | null;
+  public full_name!: string | null;
+  public profile_picture!: string | null;
   public email!: string;
-  public password!: string;
+  public otp!: number | null;
+  public other_data!: Record<string, any> | null;
 
-  // Optional: Define timestamps if needed
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
 
-// Initialize the User model
 User.init(
   {
     id: {
@@ -37,8 +42,20 @@ User.init(
     },
     username: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       unique: true,
+    },
+    full_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    profile_picture: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    other_data: {
+      type: DataTypes.JSONB,
+      allowNull: true,
     },
     email: {
       type: DataTypes.STRING,
@@ -48,16 +65,16 @@ User.init(
         isEmail: true,
       },
     },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
+    otp: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
   },
   {
     sequelize,
     modelName: 'User',
-    tableName: 'users', // Optional: Define the table name explicitly
-    timestamps: true, // Optional: Add timestamps for createdAt and updatedAt
+    tableName: 'users',
+    timestamps: true,
   }
 );
 

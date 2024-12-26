@@ -15,6 +15,23 @@ const configSchema = z
     MAIL_PASSWORD: z.string().optional(),
     MAIL_FROM: z.string().optional(),
     MAIL_DISPLAY_NAME: z.string().optional(),
+
+    JWT_SECRET_KEY: z.string().optional(),
+
+    DB_HOST: z.string().optional(),
+    DB_PORT: z.string().optional(),
+    DB_NAME: z.string().optional(),
+    DB_USER: z.string().optional(),
+    DB_PASSWORD: z.string().optional(),
+
+    EMAIL_CLIENT_SECRET: z.string().optional(),
+    EMAIL_CLIENT_ID: z.string().optional(),
+    EMAIL_REFRESH_TOKEN: z.string().optional(),
+    USER_EMAIL: z.string().optional(),
+
+    CLOUDINARY_CLOUD_NAME: z.string().optional(),
+    CLOUDINARY_API_KEY: z.string().optional(),
+    CLOUDINARY_API_SECRET: z.string().optional(),
   })
   .readonly();
 
