@@ -17,6 +17,8 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
 
     if (existingLike) {
       await existingLike.destroy();
+      await db.Post.decrement('likesCount', { where: { id: postId } });
+
       return res.status(200).json({
         message: 'post unliked successfully',
       });
@@ -25,6 +27,8 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
         userId,
         postId,
       });
+
+      await db.Post.increment('likesCount', { where: { id: postId } });
       return res.status(201).json({
         message: 'post liked successfully',
         like: newLike,

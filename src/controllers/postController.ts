@@ -5,9 +5,6 @@ import { uploadToCloudinary } from '../helpers/uploadToCloudinary';
 export const createPost = async (req: Request, res: Response) => {
   const { userId, content, mediaUrl } = req.body;
 
-  console.log(req.body);
-  console.log(userId, content);
-
   if (!userId || !content || !mediaUrl) {
     return res
       .status(400)

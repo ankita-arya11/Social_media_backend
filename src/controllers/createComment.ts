@@ -18,6 +18,8 @@ export const createComment = async (req: Request, res: Response) => {
       likesCount: 0,
     });
 
+    await db.Post.increment('commentsCount', { where: { id: postId } });
+
     return res.status(201).json({
       message: 'Comment created successfully',
       comment: newComment,

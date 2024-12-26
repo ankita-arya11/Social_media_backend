@@ -26,15 +26,15 @@ export const getPost = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    const comments = await db.Comment.findAll({
-      where: { postId: post.id },
-      attributes: ['id', 'userId', 'comment', 'likesCount', 'createdAt'],
-      order: [['createdAt', 'ASC']],
-    });
+    // const comments = await db.Comment.findAll({
+    //   where: { postId: post.id },
+    //   attributes: ['id', 'userId', 'comment', 'likesCount', 'createdAt'],
+    //   order: [['createdAt', 'ASC']],
+    // });
 
     const responseData = {
       ...post.dataValues,
-      comments,
+      // comments,
     };
 
     res.status(200).json({

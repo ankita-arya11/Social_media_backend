@@ -9,6 +9,7 @@ import { upload } from '../middlewares/multer';
 import { createComment } from '../controllers/createComment';
 import { likeAndUnlikePost } from '../controllers/likeAndUnlikePost';
 import { getPost } from '../controllers/getPost';
+import { getCommentsByPostId } from '../controllers/getCommentsByPostId';
 
 const router = express.Router();
 
@@ -62,6 +63,7 @@ router.post('/upload', upload.single('file'), fileUpload);
 router.post('/create-post', createPost);
 router.post('/create-comment', createComment);
 router.post('/post/like-unlike', likeAndUnlikePost);
-router.post('/get-post/:postId', getPost);
+router.get('/get-post/:postId', getPost);
+router.get('/get-comments/:postId', getCommentsByPostId);
 
 export default router;
