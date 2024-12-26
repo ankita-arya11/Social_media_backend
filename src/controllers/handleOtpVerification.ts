@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import { generateToken } from '../helpers/jwt';
 
 export const handleOtpVerification = async (req: Request, res: Response) => {
   const { email, otp, username, profile_picture, full_name, other_data } =
@@ -37,9 +38,13 @@ export const handleOtpVerification = async (req: Request, res: Response) => {
     user.otp = null;
     await user.save();
 
+    const token = generateToken(email);
+
+    console.log('token', token);
+
     return res.status(200).json({
       message: 'OTP verified successfully',
-      user,
+      token,
     });
   } catch (error) {
     console.error('Error during OTP verification:', error);

@@ -16,6 +16,8 @@ const configSchema = z
     MAIL_FROM: z.string().optional(),
     MAIL_DISPLAY_NAME: z.string().optional(),
 
+    JWT_SECRET_KEY: z.string().optional(),
+
     DB_HOST: z.string().optional(),
     DB_PORT: z.string().optional(),
     DB_NAME: z.string().optional(),

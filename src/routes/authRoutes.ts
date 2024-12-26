@@ -9,6 +9,8 @@ import { upload } from '../middlewares/multer';
 import { createComment } from '../controllers/createComment';
 import { likeAndUnlikePost } from '../controllers/likeAndUnlikePost';
 import { getPost } from '../controllers/getPost';
+import { authenticate } from '../middlewares/authToken';
+import { getCurrentUser } from '../controllers/user';
 
 const router = express.Router();
 
@@ -58,10 +60,11 @@ router.post('/send-otp', async (req: Request, res: Response) => {
 });
 
 router.post('/verify-otp', handleOtpVerification);
-router.post('/upload', upload.single('file'), fileUpload);
-router.post('/create-post', createPost);
-router.post('/create-comment', createComment);
-router.post('/post/like-unlike', likeAndUnlikePost);
-router.post('/get-post/:postId', getPost);
+router.post('/upload', authenticate, upload.single('file'), fileUpload);
+router.post('/create-post', authenticate, createPost);
+router.post('/create-comment', authenticate, createComment);
+router.post('/post/like-unlike', authenticate, likeAndUnlikePost);
+router.post('/get-post/:postId', authenticate, getPost);
+router.get('/me', authenticate, getCurrentUser);
 
 export default router;
