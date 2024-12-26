@@ -1,7 +1,14 @@
 import express, { Request, Response } from 'express';
-import User from '../models/User';
 import { generateOTP } from '../helpers/handleOtp';
 import { sendEmail } from '../helpers/email';
+import db from '../models';
+import { handleOtpVerification } from '../controllers/handleOtpVerification';
+import { fileUpload } from '../controllers/fileUpload';
+import { createPost } from '../controllers/postController';
+import { upload } from '../middlewares/multer';
+import { createComment } from '../controllers/createComment';
+import { likeAndUnlikePost } from '../controllers/likeAndUnlikePost';
+import { getPost } from '../controllers/getPost';
 
 const router = express.Router();
 
@@ -11,17 +18,17 @@ router.post('/send-otp', async (req: Request, res: Response) => {
   if (!email) {
     return res.status(400).send({ message: 'Email is required' });
   }
-
   const otp = generateOTP();
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await db.User.findOne({ where: { email } });
+    const isNewUser = !(user?.full_name && user?.email);
 
     if (user) {
       user.otp = otp;
       await user.save();
     } else {
-      await User.create({
+      await db.User.create({
         email,
         otp,
       });
@@ -42,7 +49,7 @@ router.post('/send-otp', async (req: Request, res: Response) => {
 
     res.status(200).send({
       message: 'OTP sent successfully',
-      isNewUser: !user,
+      isNewUser: isNewUser,
     });
   } catch (error) {
     console.error(error);
@@ -50,43 +57,11 @@ router.post('/send-otp', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/verify-otp', async (req: Request, res: Response) => {
-  const { email, otp, username, profile_picture, full_name, other_data } =
-    req.body;
-
-  if (!email || !otp) {
-    return res.status(400).json({ message: 'Email and OTP are required' });
-  }
-
-  try {
-    const user = await User.findOne({ where: { email } });
-
-    if (!user) {
-      return res.status(400).json({ message: 'User does not exist' });
-    }
-
-    if (user.otp !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-
-    if (username || full_name || profile_picture || other_data) {
-      user.username = username || user.username;
-      user.full_name = full_name || user.full_name;
-      user.profile_picture = profile_picture || user.profile_picture;
-      user.other_data = other_data || user.other_data;
-    }
-
-    user.otp = null;
-    await user.save();
-
-    return res.status(200).json({
-      message: 'OTP verified successfully',
-      user,
-    });
-  } catch (error) {
-    console.error('Error during OTP verification:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
+router.post('/verify-otp', handleOtpVerification);
+router.post('/upload', upload.single('file'), fileUpload);
+router.post('/create-post', createPost);
+router.post('/create-comment', createComment);
+router.post('/post/like-unlike', likeAndUnlikePost);
+router.post('/get-post/:postId', getPost);
 
 export default router;
