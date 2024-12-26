@@ -20,26 +20,21 @@ export const getPost = async (req: Request, res: Response) => {
         'commentsCount',
         'createdAt',
       ],
+      include: [
+        {
+          model: db.User,
+          attributes: ['id', 'username', 'full_name', 'profile_picture'],
+        },
+      ],
     });
 
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    // const comments = await db.Comment.findAll({
-    //   where: { postId: post.id },
-    //   attributes: ['id', 'userId', 'comment', 'likesCount', 'createdAt'],
-    //   order: [['createdAt', 'ASC']],
-    // });
-
-    const responseData = {
-      ...post.dataValues,
-      // comments,
-    };
-
     res.status(200).json({
       message: 'Post fetched successfully',
-      post: responseData,
+      post,
     });
   } catch (error) {
     console.error('Error fetching post:', error);

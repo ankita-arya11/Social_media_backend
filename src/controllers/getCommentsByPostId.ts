@@ -8,9 +8,23 @@ export const getCommentsByPostId = async (req: Request, res: Response) => {
     if (!postId) {
       return res.status(400).json({ message: 'Post ID is required' });
     }
+
     const comments = await db.Comment.findAll({
       where: { postId },
-      attributes: ['id', 'userId', 'comment', 'likesCount', 'createdAt'],
+      attributes: [
+        'id',
+        'userId',
+        'postId',
+        'comment',
+        'likesCount',
+        'createdAt',
+      ],
+      include: [
+        {
+          model: db.User,
+          attributes: ['id', 'full_name', 'username', 'profile_picture'],
+        },
+      ],
       order: [['createdAt', 'DESC']],
     });
 
@@ -19,7 +33,7 @@ export const getCommentsByPostId = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({
-      message: 'comments fetched successfully',
+      message: 'Comments fetched successfully',
       comments,
     });
   } catch (error) {

@@ -10,8 +10,6 @@ export const fileUpload = async (req: Request, res: Response) => {
     const folderName = 'images';
     const file = req.file;
 
-    console.log('File uploaded at:', file.originalname);
-
     const uploadResult = await uploadToCloudinary(file, folderName);
 
     res.status(200).json({

@@ -4,12 +4,19 @@ import { sendEmail } from '../helpers/email';
 import db from '../models';
 import { handleOtpVerification } from '../controllers/handleOtpVerification';
 import { fileUpload } from '../controllers/fileUpload';
-import { createPost } from '../controllers/postController';
+import { createPost, getAllPost } from '../controllers/postController';
 import { upload } from '../middlewares/multer';
 import { createComment } from '../controllers/createComment';
 import { likeAndUnlikePost } from '../controllers/likeAndUnlikePost';
 import { getPost } from '../controllers/getPost';
 import { getCommentsByPostId } from '../controllers/getCommentsByPostId';
+import { authenticate } from '../middlewares/authToken';
+import { getCurrentUser } from '../controllers/user';
+import { profileUpdate } from '../controllers/profileUpdate';
+import { deletePost } from '../controllers/deletePost';
+import { deleteComment } from '../controllers/deleteComment';
+import { getUserById } from '../controllers/getUserById';
+import { getAllUsers } from '../controllers/getAllUsers';
 
 const router = express.Router();
 
@@ -59,11 +66,18 @@ router.post('/send-otp', async (req: Request, res: Response) => {
 });
 
 router.post('/verify-otp', handleOtpVerification);
-router.post('/upload', upload.single('file'), fileUpload);
-router.post('/create-post', createPost);
-router.post('/create-comment', createComment);
-router.post('/post/like-unlike', likeAndUnlikePost);
-router.get('/get-post/:postId', getPost);
-router.get('/get-comments/:postId', getCommentsByPostId);
+router.get('/get-comments/:postId', authenticate, getCommentsByPostId);
+router.post('/upload', authenticate, upload.single('file'), fileUpload);
+router.post('/create-post', authenticate, createPost);
+router.post('/create-comment', authenticate, createComment);
+router.post('/post/like-unlike', authenticate, likeAndUnlikePost);
+router.get('/get-post/:postId', authenticate, getPost);
+router.get('/get-posts', authenticate, getAllPost);
+router.get('/me', authenticate, getCurrentUser);
+router.post('/profile-update', authenticate, profileUpdate);
+router.post('/delete-post/:postId', authenticate, deletePost);
+router.post('/delete-comment/:commentId', authenticate, deleteComment);
+router.get('/get-user-by-id/:id', getUserById);
+router.get('/get-all-users', authenticate, getAllUsers);
 
 export default router;
