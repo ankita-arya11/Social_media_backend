@@ -1,12 +1,8 @@
 import { Request, Response } from 'express';
 import db from '../models';
-import { uploadToCloudinary } from '../helpers/uploadToCloudinary';
 
 export const createPost = async (req: Request, res: Response) => {
   const { userId, content, mediaUrl } = req.body;
-
-  console.log(req.body);
-  console.log(userId, content);
 
   if (!userId || !content || !mediaUrl) {
     return res
@@ -29,5 +25,38 @@ export const createPost = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error creating post:', error);
     return res.status(500).json({ message: 'Failed to create post' });
+  }
+};
+
+export const getAllPost = async (req: Request, res: Response) => {
+  try {
+    const posts = await db.Post.findAll({
+      attributes: [
+        'id',
+        'userId',
+        'content',
+        'mediaUrl',
+        'likesCount',
+        'commentsCount',
+        'createdAt',
+      ],
+      include: [
+        {
+          model: db.User,
+          attributes: ['id', 'username', 'full_name', 'profile_picture'],
+        },
+      ],
+    });
+
+    res.status(200).json({
+      message: 'Posts fetched successfully',
+      posts,
+    });
+  } catch (error) {
+    console.error('Error fetching post:', error);
+    res.status(500).json({
+      message: 'Failed to fetch post',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 };

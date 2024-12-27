@@ -40,8 +40,6 @@ export const handleOtpVerification = async (req: Request, res: Response) => {
 
     const token = generateToken(email);
 
-    console.log('token', token);
-
     return res.status(200).json({
       message: 'OTP verified successfully',
       token,

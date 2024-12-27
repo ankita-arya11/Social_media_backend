@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import db from '../models';
 
-export const getPost = async (req: Request, res: Response) => {
+export const getCommentsByPostId = async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
 
@@ -9,37 +9,37 @@ export const getPost = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Post ID is required' });
     }
 
-    const post = await db.Post.findOne({
-      where: { id: postId },
+    const comments = await db.Comment.findAll({
+      where: { postId },
       attributes: [
         'id',
         'userId',
-        'content',
-        'mediaUrl',
+        'postId',
+        'comment',
         'likesCount',
-        'commentsCount',
         'createdAt',
       ],
       include: [
         {
           model: db.User,
-          attributes: ['id', 'username', 'full_name', 'profile_picture'],
+          attributes: ['id', 'full_name', 'username', 'profile_picture'],
         },
       ],
+      order: [['createdAt', 'DESC']],
     });
 
-    if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
+    if (!comments.length) {
+      return res.status(404).json({ message: 'No comments yet' });
     }
 
     res.status(200).json({
-      message: 'Post fetched successfully',
-      post,
+      message: 'Comments fetched successfully',
+      comments,
     });
   } catch (error) {
-    console.error('Error fetching post:', error);
+    console.error('Error fetching comments:', error);
     res.status(500).json({
-      message: 'Failed to fetch post',
+      message: 'Failed to fetch comments',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }

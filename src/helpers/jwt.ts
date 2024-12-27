@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/index';
 
 const SECRET_KEY = config.JWT_SECRET_KEY || 'your-secret-key';
-const TOKEN_EXPIRATION = '1h';
+const TOKEN_EXPIRATION = 7 * 24 * 60 * 60;
 
 export const generateToken = (email: string): string => {
   if (!SECRET_KEY) {
