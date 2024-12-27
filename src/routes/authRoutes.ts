@@ -4,19 +4,28 @@ import { sendEmail } from '../helpers/email';
 import db from '../models';
 import { handleOtpVerification } from '../controllers/handleOtpVerification';
 import { fileUpload } from '../controllers/fileUpload';
-import { createPost, getAllPost } from '../controllers/postController';
 import { upload } from '../middlewares/multer';
-import { createComment } from '../controllers/createComment';
-import { likeAndUnlikePost } from '../controllers/likeAndUnlikePost';
-import { getPost } from '../controllers/getPost';
-import { getCommentsByPostId } from '../controllers/getCommentsByPostId';
+import {
+  createComment,
+  deleteComment,
+  getCommentsByPostId,
+} from '../controllers/commentController';
+import {
+  createPost,
+  getAllPost,
+  getPost,
+  likeAndUnlikePost,
+  deletePost,
+} from '../controllers/postController';
 import { authenticate } from '../middlewares/authToken';
-import { getCurrentUser } from '../controllers/user';
+import {
+  getCurrentUser,
+  getUserById,
+  getAllUsers,
+} from '../controllers/userController';
 import { profileUpdate } from '../controllers/profileUpdate';
-import { deletePost } from '../controllers/deletePost';
-import { deleteComment } from '../controllers/deleteComment';
-import { getUserById } from '../controllers/getUserById';
-import { getAllUsers } from '../controllers/getAllUsers';
+import { addFollower } from '../controllers/followController';
+import { addFollowing } from '../controllers/followController';
 
 const router = express.Router();
 
@@ -75,9 +84,11 @@ router.get('/get-post/:postId', authenticate, getPost);
 router.get('/get-posts', authenticate, getAllPost);
 router.get('/me', authenticate, getCurrentUser);
 router.post('/profile-update', authenticate, profileUpdate);
-router.post('/delete-post/:postId', authenticate, deletePost);
-router.post('/delete-comment/:commentId', authenticate, deleteComment);
+router.delete('/delete-post/:postId', authenticate, deletePost);
+router.delete('/delete-comment/:commentId', authenticate, deleteComment);
 router.get('/get-user-by-id/:id', getUserById);
 router.get('/get-all-users', authenticate, getAllUsers);
+router.post('/add-following/:userId', addFollowing);
+router.post('add-follower/:userId', addFollower);
 
 export default router;

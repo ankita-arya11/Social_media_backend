@@ -33,6 +33,16 @@ export const handleOtpVerification = async (req: Request, res: Response) => {
       user.full_name = full_name || user.full_name;
       user.profile_picture = profile_picture || user.profile_picture;
       user.other_data = other_data || user.other_data;
+
+      await db.FollowerList.create({
+        userId: user.id,
+        followers: [],
+      });
+
+      await db.FollowingList.create({
+        userId: user.id,
+        following: [],
+      });
     }
 
     user.otp = null;
