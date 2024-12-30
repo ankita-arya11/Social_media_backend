@@ -26,11 +26,43 @@ export const handleSendOtp = async (req: Request, res: Response) => {
       });
     }
 
+    const recipientName = user?.full_name || 'User';
+    const organizationName = 'Socialize Hiteshi';
+
     const emailData = {
       receiver: email,
       subject: 'Your OTP Code',
-      text: `Your OTP code is: ${otp}`,
-      html: `<p>Your OTP code is: <strong>${otp}</strong></p>`,
+      text: `
+        Hello ${recipientName},
+
+        We have received a request to verify your identity for ${organizationName}. Please use the OTP below to complete your action:
+
+        OTP: ${otp}
+
+        This OTP is valid for 10 minutes and can only be used once. If you did not request this, please ignore this email.
+
+        If you have any questions, feel free to contact our support team.
+
+        Best Regards,
+        ${organizationName}
+        [Your Contact Information]
+        [Your Website URL]
+      `,
+      html: `
+        <html>
+          <body>
+            <p>Hello ${recipientName},</p>
+            <p>We have received a request to verify your identity for <strong>${organizationName}</strong>. Please use the OTP below to complete your action:</p>
+            <div style="font-size: 20px; font-weight: bold;">
+              <p>OTP: ${otp}</p>
+            </div>
+            <p>This OTP is valid for 10 minutes and can only be used once. If you did not request this, please ignore this email.</p>
+            <p>If you have any questions, feel free to contact our support team.</p>
+            <br>
+            <p>Best Regards,<br>${organizationName}<br>[Your Contact Information]<br>[Your Website URL]</p>
+          </body>
+        </html>
+      `,
     };
 
     const isEmailSent = await sendEmail(emailData);
@@ -49,6 +81,7 @@ export const handleSendOtp = async (req: Request, res: Response) => {
   }
 };
 
+//otp verification
 export const handleOtpVerification = async (req: Request, res: Response) => {
   const { email, otp, username, profile_picture, full_name, other_data } =
     req.body;
