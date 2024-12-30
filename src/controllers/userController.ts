@@ -30,6 +30,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
         'username',
         'full_name',
         'profile_picture',
+        'other_data',
         'createdAt',
         'updatedAt',
       ],

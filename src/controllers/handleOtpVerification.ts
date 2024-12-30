@@ -1,6 +1,53 @@
 import { Request, Response } from 'express';
 import db from '../models';
 import { generateToken } from '../helpers/jwt';
+import sendEmail from '../helpers/email';
+import { generateOTP } from '../helpers/handleOtp';
+
+export const handleSendOtp = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).send({ message: 'Email is required' });
+  }
+  const otp = generateOTP();
+
+  try {
+    const user = await db.User.findOne({ where: { email } });
+    const isNewUser = !(user?.full_name && user?.email);
+
+    if (user) {
+      user.otp = otp;
+      await user.save();
+    } else {
+      await db.User.create({
+        email,
+        otp,
+      });
+    }
+
+    const emailData = {
+      receiver: email,
+      subject: 'Your OTP Code',
+      text: `Your OTP code is: ${otp}`,
+      html: `<p>Your OTP code is: <strong>${otp}</strong></p>`,
+    };
+
+    const isEmailSent = await sendEmail(emailData);
+
+    if (!isEmailSent) {
+      return res.status(500).send({ message: 'Failed to send OTP email' });
+    }
+
+    res.status(200).send({
+      message: 'OTP sent successfully',
+      isNewUser: isNewUser,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Failed to process OTP request' });
+  }
+};
 
 export const handleOtpVerification = async (req: Request, res: Response) => {
   const { email, otp, username, profile_picture, full_name, other_data } =

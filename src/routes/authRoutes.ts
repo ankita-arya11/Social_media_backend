@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
-import { generateOTP } from '../helpers/handleOtp';
-import { sendEmail } from '../helpers/email';
-import db from '../models';
-import { handleOtpVerification } from '../controllers/handleOtpVerification';
+import {
+  handleOtpVerification,
+  handleSendOtp,
+} from '../controllers/handleOtpVerification';
 import { fileUpload } from '../controllers/fileUpload';
 import { upload } from '../middlewares/multer';
 import {
@@ -24,56 +24,19 @@ import {
   getAllUsers,
 } from '../controllers/userController';
 import { profileUpdate } from '../controllers/profileUpdate';
-import { addFollower } from '../controllers/followController';
-import { addFollowing } from '../controllers/followController';
+import {
+  addFollower,
+  addFollowing,
+  getFollowers,
+  getFollowings,
+  removeFollower,
+  removeFollowing,
+} from '../controllers/followController';
+import { getPostByUserId } from '../controllers/postController';
 
 const router = express.Router();
 
-router.post('/send-otp', async (req: Request, res: Response) => {
-  const { email } = req.body;
-
-  if (!email) {
-    return res.status(400).send({ message: 'Email is required' });
-  }
-  const otp = generateOTP();
-
-  try {
-    const user = await db.User.findOne({ where: { email } });
-    const isNewUser = !(user?.full_name && user?.email);
-
-    if (user) {
-      user.otp = otp;
-      await user.save();
-    } else {
-      await db.User.create({
-        email,
-        otp,
-      });
-    }
-
-    const emailData = {
-      receiver: email,
-      subject: 'Your OTP Code',
-      text: `Your OTP code is: ${otp}`,
-      html: `<p>Your OTP code is: <strong>${otp}</strong></p>`,
-    };
-
-    const isEmailSent = await sendEmail(emailData);
-
-    if (!isEmailSent) {
-      return res.status(500).send({ message: 'Failed to send OTP email' });
-    }
-
-    res.status(200).send({
-      message: 'OTP sent successfully',
-      isNewUser: isNewUser,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({ message: 'Failed to process OTP request' });
-  }
-});
-
+router.post('/send-otp', handleSendOtp);
 router.post('/verify-otp', handleOtpVerification);
 router.get('/get-comments/:postId', authenticate, getCommentsByPostId);
 router.post('/upload', authenticate, upload.single('file'), fileUpload);
@@ -86,9 +49,14 @@ router.get('/me', authenticate, getCurrentUser);
 router.post('/profile-update', authenticate, profileUpdate);
 router.delete('/delete-post/:postId', authenticate, deletePost);
 router.delete('/delete-comment/:commentId', authenticate, deleteComment);
-router.get('/get-user-by-id/:id', getUserById);
+router.get('/get-user-by-id/:id', authenticate, getUserById);
 router.get('/get-all-users', authenticate, getAllUsers);
-router.post('/add-following/:userId', addFollowing);
-router.post('add-follower/:userId', addFollower);
+router.get('/get-post-by-userId/:userId', authenticate, getPostByUserId);
+router.post('/add-following/:userId', authenticate, addFollowing);
+router.post('/add-follower/:userId', authenticate, addFollower);
+router.get('/get-followings/:userId', authenticate, getFollowings);
+router.get('/get-followers/:userId', authenticate, getFollowers);
+router.post('/remove-following/:userId', removeFollowing);
+router.post('/remove-follower/:userId', removeFollower);
 
 export default router;

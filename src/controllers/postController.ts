@@ -113,6 +113,48 @@ export const getAllPost = async (req: Request, res: Response) => {
   }
 };
 
+//get post by user id
+export const getPostByUserId = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
+  try {
+    const user = await db.User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const posts = await db.Post.findAll({
+      where: { userId },
+      include: [
+        {
+          model: db.User,
+          attributes: ['id', 'username', 'full_name', 'profile_picture'],
+        },
+        {
+          model: db.PostLike,
+          attributes: ['userId'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    return res
+      .status(200)
+      .json({ message: 'Posts retrieved successfully', posts });
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    return res.status(500).json({
+      message: 'Server error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
 //delete post
 export const deletePost = async (req: Request, res: Response) => {
   try {

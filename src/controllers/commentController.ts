@@ -88,10 +88,6 @@ export const getCommentsByPostId = async (req: Request, res: Response) => {
       order: [['createdAt', 'DESC']],
     });
 
-    if (!comments.length) {
-      return res.status(404).json({ message: 'No comments yet' });
-    }
-
     res.status(200).json({
       message: 'Comments fetched successfully',
       comments,
