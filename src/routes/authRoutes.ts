@@ -3,8 +3,8 @@ import {
   handleOtpVerification,
   handleSendOtp,
 } from '../controllers/handleOtpVerification';
-import { fileUpload } from '../controllers/fileUpload';
-import { upload } from '../middlewares/multer';
+import { mulipleFileUpload, singleFileUpload } from '../controllers/fileUpload';
+import { uploadMultipleFiles, uploadSingleFile } from '../middlewares/multer';
 import {
   createComment,
   deleteComment,
@@ -39,7 +39,13 @@ const router = express.Router();
 router.post('/send-otp', handleSendOtp);
 router.post('/verify-otp', handleOtpVerification);
 router.get('/get-comments/:postId', authenticate, getCommentsByPostId);
-router.post('/upload', authenticate, upload.single('file'), fileUpload);
+router.post(
+  '/multiple-upload',
+  authenticate,
+  uploadMultipleFiles,
+  mulipleFileUpload
+);
+router.post('/single-upload', authenticate, uploadSingleFile, singleFileUpload);
 router.post('/create-post', authenticate, createPost);
 router.post('/create-comment', authenticate, createComment);
 router.post('/post/like-unlike', authenticate, likeAndUnlikePost);

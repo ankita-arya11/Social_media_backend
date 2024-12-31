@@ -3,21 +3,36 @@ import db from '../models';
 
 //create post
 export const createPost = async (req: Request, res: Response) => {
-  const { userId, content, mediaUrl } = req.body;
+  const { userId, content, mediaUrls } = req.body;
 
-  if (!userId || !content || !mediaUrl) {
+  if (!userId || !content || !mediaUrls) {
     return res
       .status(400)
-      .json({ message: 'User ID and content are required' });
+      .json({ message: 'User ID, content, and media URL are required' });
   }
+
   try {
+    const user = await db.User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     const newPost = await db.Post.create({
       userId,
       content,
-      mediaUrl,
+      mediaUrls,
       likesCount: 0,
       commentsCount: 0,
     });
+
+    const otherData = user?.other_data || {};
+    otherData.posts = (otherData?.posts || 0) + 1;
+
+    user.other_data = otherData;
+
+    user.changed('other_data', true);
+
+    await user.save();
 
     return res.status(201).json({
       message: 'Post created successfully',
@@ -44,7 +59,7 @@ export const getPost = async (req: Request, res: Response) => {
         'id',
         'userId',
         'content',
-        'mediaUrl',
+        'mediaUrls',
         'likesCount',
         'commentsCount',
         'createdAt',
@@ -82,7 +97,7 @@ export const getAllPost = async (req: Request, res: Response) => {
         'id',
         'userId',
         'content',
-        'mediaUrl',
+        'mediaUrls',
         'likesCount',
         'commentsCount',
         'createdAt',
@@ -97,7 +112,7 @@ export const getAllPost = async (req: Request, res: Response) => {
           attributes: ['userId'],
         },
       ],
-      order: [['createdAt', 'DESC']], // Change to DESC for recent posts first
+      order: [['createdAt', 'DESC']],
     });
 
     res.status(200).json({

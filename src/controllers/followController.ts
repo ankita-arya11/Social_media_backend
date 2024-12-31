@@ -20,6 +20,7 @@ export const addFollowing = async (
         id: [userId, followingId],
       },
     });
+    const userIdNum = Number(userId);
 
     if (usersExist.length !== 2) {
       return res
@@ -43,6 +44,7 @@ export const addFollowing = async (
 
     const updatedFollowing = [...followingList.following, followingId];
     await followingList.update({ following: updatedFollowing });
+    await updateOtherData(userIdNum, 'followings', true);
 
     return res.status(200).json({
       message: 'User added to following list successfully',
@@ -62,6 +64,8 @@ export const addFollower = async (req: Request, res: Response) => {
   try {
     const { followerId } = req.body;
     const { userId } = req.params;
+
+    const userIdNum = Number(userId);
 
     if (!userId || !followerId) {
       return res
@@ -96,6 +100,8 @@ export const addFollower = async (req: Request, res: Response) => {
     followerList.followers = updatedFollowers;
 
     await followerList.save();
+
+    await updateOtherData(userIdNum, 'friends', true);
 
     return res.status(200).json({
       message: 'Follower added successfully',
@@ -234,14 +240,15 @@ export const removeFollowing = async (
       return res.status(404).json({ message: 'Following list not found' });
     }
 
-    if (!followingList.following.includes(followingIdNum)) {
-      return res.status(400).json({ message: 'User is not being followed' });
+    if (followingList.following.includes(followingIdNum)) {
+      followingList.following = followingList.following.filter(
+        (id) => id !== followingIdNum
+      );
     }
 
-    followingList.following = followingList.following.filter(
-      (id) => id !== followingIdNum
-    );
     await followingList.save();
+
+    await updateOtherData(userIdNum, 'followings', false);
 
     const followerList = await db.FollowerList.findOne({
       where: { userId: followingIdNum },
@@ -251,14 +258,15 @@ export const removeFollowing = async (
       return res.status(404).json({ message: 'Follower list not found' });
     }
 
-    if (!followerList.followers.includes(userIdNum)) {
-      return res.status(400).json({ message: 'User is not a follower' });
+    if (followerList.followers.includes(userIdNum)) {
+      followerList.followers = followerList.followers.filter(
+        (id) => id !== userIdNum
+      );
     }
 
-    followerList.followers = followerList.followers.filter(
-      (id) => id !== userIdNum
-    );
     await followerList.save();
+
+    await updateOtherData(followingIdNum, 'friends', false);
 
     return res.status(200).json({
       message: 'User removed from following list successfully',
@@ -273,7 +281,6 @@ export const removeFollowing = async (
   }
 };
 
-// remove follower
 export const removeFollower = async (
   req: Request,
   res: Response
@@ -288,7 +295,6 @@ export const removeFollower = async (
         .json({ message: 'userId and followerId are required' });
     }
 
-    // Convert userId and followerId to numbers
     const userIdInt = parseInt(userId, 10);
     const followerIdInt = parseInt(followerId, 10);
 
@@ -310,7 +316,6 @@ export const removeFollower = async (
         .json({ message: 'One or more users do not exist' });
     }
 
-    // Remove from the user's follower list
     const followerList = await db.FollowerList.findOne({
       where: { userId: userIdInt },
     });
@@ -319,19 +324,14 @@ export const removeFollower = async (
       return res.status(404).json({ message: 'Follower list not found' });
     }
 
-    console.log('Follower list before removal:', followerList.followers);
-
-    if (!followerList.followers.includes(followerIdInt)) {
-      return res.status(400).json({ message: 'User is not a follower' });
+    if (followerList.followers.includes(followerIdInt)) {
+      // return res.status(400).json({ message: 'User is not a follower' });
+      followerList.followers = followerList?.followers?.filter(
+        (id) => id !== followerIdInt
+      );
     }
-
-    // Remove from the followers list
-    followerList.followers = followerList.followers.filter(
-      (id) => id !== followerIdInt
-    );
     await followerList.save();
 
-    // Remove from the follower's following list
     const followingList = await db.FollowingList.findOne({
       where: { userId: followerIdInt },
     });
@@ -340,16 +340,12 @@ export const removeFollower = async (
       return res.status(404).json({ message: 'Following list not found' });
     }
 
-    console.log('Following list before removal:', followingList.following);
-
-    if (!followingList.following.includes(userIdInt)) {
-      return res.status(400).json({ message: 'User is not being followed' });
+    if (followingList.following.includes(userIdInt)) {
+      // return res.status(400).json({ message: 'User is not being followed' });
+      followingList.following = followingList.following.filter(
+        (id) => id !== userIdInt
+      );
     }
-
-    // Remove from the following list
-    followingList.following = followingList.following.filter(
-      (id) => id !== userIdInt
-    );
     await followingList.save();
 
     return res.status(200).json({
@@ -364,4 +360,25 @@ export const removeFollower = async (
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
+};
+
+const updateOtherData = async (
+  userId: number,
+  field: 'friends' | 'followings',
+  increment: boolean
+) => {
+  const user = await db.User.findByPk(userId);
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const otherData = user?.other_data || {};
+  const currentCount = otherData[field] || 0;
+  otherData[field] = increment
+    ? currentCount + 1
+    : Math.max(0, currentCount - 1);
+  user.other_data = otherData;
+  user.changed('other_data', true);
+  await user.save();
 };

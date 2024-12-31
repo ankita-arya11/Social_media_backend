@@ -1,7 +1,40 @@
 import { Request, Response } from 'express';
-import { uploadToCloudinary } from '../helpers/uploadToCloudinary';
+import {
+  singleUploadToCloudinary,
+  uploadToCloudinary,
+} from '../helpers/uploadToCloudinary';
 
-export const fileUpload = async (req: Request, res: Response) => {
+export const mulipleFileUpload = async (req: Request, res: Response) => {
+  try {
+    if (!req.files) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const folderName = 'images';
+    const files = req.files as Express.Multer.File[];
+    console.log(files, 'hello I am file');
+
+    const uploadResults = await uploadToCloudinary(files, folderName);
+    console.log(uploadResults, 'upload result......');
+
+    const mediaUrls = uploadResults.map((result) => result.url);
+
+    res.status(200).json({
+      message: 'File uploaded successfully',
+      mediaUrls,
+    });
+  } catch (error) {
+    console.error('File Upload Error:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({
+      message: 'Failed to upload file',
+      error: errorMessage,
+    });
+  }
+};
+
+export const singleFileUpload = async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -10,11 +43,11 @@ export const fileUpload = async (req: Request, res: Response) => {
     const folderName = 'images';
     const file = req.file;
 
-    const uploadResult = await uploadToCloudinary(file, folderName);
+    const uploadResults = await singleUploadToCloudinary(file, folderName);
 
     res.status(200).json({
       message: 'File uploaded successfully',
-      mediaUrl: uploadResult.url,
+      mediaUrl: uploadResults.url,
     });
   } catch (error) {
     console.error('File Upload Error:', error);

@@ -13,9 +13,9 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 
     res.json({ message: 'User fetched Successfully', user });
   } catch (error) {
-    console.error('Error fetching post:', error);
+    console.error('Error fetching user:', error);
     res.status(500).json({
-      message: 'Failed to fetch post',
+      message: 'Failed to fetch user',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
@@ -66,6 +66,7 @@ export const getUserById = async (req: Request, res: Response) => {
         'email',
         'profile_picture',
         'createdAt',
+        'other_data',
         'updatedAt',
       ],
     });

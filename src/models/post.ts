@@ -6,7 +6,7 @@ interface PostAttributes {
   id: number;
   userId: number;
   content: string;
-  mediaUrl?: string;
+  mediaUrls?: string[];
   likesCount: number;
   commentsCount: number;
   createdAt?: Date;
@@ -16,7 +16,7 @@ interface PostAttributes {
 interface PostCreationAttributes
   extends Optional<
     PostAttributes,
-    'id' | 'mediaUrl' | 'likesCount' | 'commentsCount'
+    'id' | 'mediaUrls' | 'likesCount' | 'commentsCount'
   > {}
 
 class Post
@@ -26,7 +26,7 @@ class Post
   public id!: number;
   public userId!: number;
   public content!: string;
-  public mediaUrl?: string;
+  public mediaUrls?: string[];
   public likesCount!: number;
   public commentsCount!: number;
 
@@ -54,8 +54,8 @@ Post.init(
       type: DataTypes.TEXT,
       allowNull: false,
     },
-    mediaUrl: {
-      type: DataTypes.STRING,
+    mediaUrls: {
+      type: DataTypes.JSON,
       allowNull: true,
     },
     likesCount: {

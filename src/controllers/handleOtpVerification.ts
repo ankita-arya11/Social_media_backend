@@ -83,8 +83,7 @@ export const handleSendOtp = async (req: Request, res: Response) => {
 
 //otp verification
 export const handleOtpVerification = async (req: Request, res: Response) => {
-  const { email, otp, username, profile_picture, full_name, other_data } =
-    req.body;
+  const { email, otp, username, full_name } = req.body;
 
   if (!email || !otp) {
     return res.status(400).json({ message: 'Email and OTP are required' });
@@ -108,11 +107,20 @@ export const handleOtpVerification = async (req: Request, res: Response) => {
       });
     }
 
-    if (username || full_name || profile_picture || other_data) {
+    if (username || full_name) {
       user.username = username || user.username;
       user.full_name = full_name || user.full_name;
-      user.profile_picture = profile_picture || user.profile_picture;
-      user.other_data = other_data || user.other_data;
+      user.profile_picture = null;
+      user.other_data = {
+        cover_picture: '',
+        location: '',
+        job_title: '',
+        university: '',
+        bio: '',
+        friends: 0,
+        following: 0,
+        posts: 0,
+      };
 
       await db.FollowerList.create({
         userId: user.id,
