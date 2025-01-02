@@ -16,23 +16,28 @@ import {
   getPost,
   likeAndUnlikePost,
   deletePost,
+  latestPosts,
 } from '../controllers/postController';
 import { authenticate } from '../middlewares/authToken';
 import {
   getCurrentUser,
   getUserById,
   getAllUsers,
+  searchUser,
+  latestUsers,
 } from '../controllers/userController';
 import { profileUpdate } from '../controllers/profileUpdate';
 import {
   addFollower,
   addFollowing,
+  checkFollowing,
   getFollowers,
   getFollowings,
   removeFollower,
   removeFollowing,
 } from '../controllers/followController';
 import { getPostByUserId } from '../controllers/postController';
+import { searchQuery } from '../controllers/searchController';
 
 const router = express.Router();
 
@@ -62,7 +67,16 @@ router.post('/add-following/:userId', authenticate, addFollowing);
 router.post('/add-follower/:userId', authenticate, addFollower);
 router.get('/get-followings/:userId', authenticate, getFollowings);
 router.get('/get-followers/:userId', authenticate, getFollowers);
-router.post('/remove-following/:userId', removeFollowing);
-router.post('/remove-follower/:userId', removeFollower);
+router.post('/remove-following/:userId', authenticate, removeFollowing);
+router.post('/remove-follower/:userId', authenticate, removeFollower);
+router.get('/search-user/:username', authenticate, searchUser);
+router.get('/latest-users', authenticate, latestUsers);
+router.get('/latest-posts', authenticate, latestPosts);
+router.get('/search/:query', authenticate, searchQuery);
+router.get(
+  '/check-following/:userId/:followingId',
+  authenticate,
+  checkFollowing
+);
 
 export default router;

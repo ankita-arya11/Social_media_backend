@@ -382,3 +382,42 @@ const updateOtherData = async (
   user.changed('other_data', true);
   await user.save();
 };
+
+//check following
+export const checkFollowing = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  try {
+    const { userId, followingId } = req.params;
+
+    const userIdNum = parseInt(userId, 10);
+    const followingIdNum = parseInt(followingId, 10);
+
+    if (isNaN(userIdNum) || isNaN(followingIdNum)) {
+      return res
+        .status(400)
+        .json({ message: 'userId and followingId must be valid numbers' });
+    }
+
+    const followingList = await db.FollowingList.findOne({
+      where: { userId: userIdNum },
+    });
+
+    if (!followingList) {
+      return res.status(404).json({ message: 'Following list not found' });
+    }
+
+    const isFollowing = followingList.following.includes(followingIdNum);
+
+    return res.status(200).json({
+      isFollowing,
+    });
+  } catch (error) {
+    console.error('Error checking following:', error);
+    return res.status(500).json({
+      message: 'Failed to check following status',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};

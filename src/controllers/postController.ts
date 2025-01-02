@@ -142,7 +142,6 @@ export const getPostByUserId = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     const posts = await db.Post.findAll({
       where: { userId },
       include: [
@@ -186,7 +185,6 @@ export const deletePost = async (req: Request, res: Response) => {
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
     }
-
     await post.destroy();
 
     res.status(200).json({ message: 'Post deleted successfully' });
@@ -237,6 +235,37 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
     console.error('error toggling post like', error);
     return res.status(500).json({
       message: 'failed to toggle post like',
+    });
+  }
+};
+
+//latest 3 posts
+export const latestPosts = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  try {
+    const latestPosts = await db.Post.findAll({
+      order: [['createdAt', 'DESC']],
+      limit: 3,
+      attributes: ['id', 'content', 'userId', 'mediaUrls', 'createdAt'],
+      include: [
+        {
+          model: db.User,
+          attributes: ['id', 'username', 'full_name'],
+        },
+      ],
+    });
+
+    return res.status(200).json({
+      message: 'Latest posts fetched successfully',
+      posts: latestPosts,
+    });
+  } catch (error) {
+    console.error('Error fetching latest posts:', error);
+    return res.status(500).json({
+      message: 'Failed to fetch latest posts',
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };
