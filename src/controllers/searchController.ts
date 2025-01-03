@@ -18,24 +18,33 @@ export const searchQuery = async (
     const posts = await db.Post.findAll({
       where: {
         content: {
-          [Op.like]: `%${query}%`,
+          [Op.iLike]: `%${query}%`,
         },
       },
-      attributes: ['id', 'content', 'userId', 'mediaUrls', 'createdAt'],
+      attributes: [
+        'id',
+        'content',
+        'userId',
+        'likesCount',
+        'commentsCount',
+        'mediaUrls',
+        'createdAt',
+      ],
       include: [
         {
           model: db.User,
-          attributes: ['id', 'username'],
+          attributes: ['id', 'username', 'full_name'],
         },
       ],
     });
+
     const users = await db.User.findAll({
       where: {
         username: {
-          [Op.like]: `%${query}%`,
+          [Op.iLike]: `%${query}%`,
         },
       },
-      attributes: ['id', 'username', 'profile_picture'],
+      attributes: ['id', 'username', 'full_name', 'profile_picture'],
     });
 
     return res.status(200).json({

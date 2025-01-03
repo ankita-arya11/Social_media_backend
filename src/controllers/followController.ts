@@ -59,7 +59,6 @@ export const addFollowing = async (
   }
 };
 
-//add follower
 export const addFollower = async (req: Request, res: Response) => {
   try {
     const { followerId } = req.body;
@@ -116,7 +115,6 @@ export const addFollower = async (req: Request, res: Response) => {
   }
 };
 
-// get following
 export const getFollowings = async (
   req: Request,
   res: Response
@@ -159,7 +157,6 @@ export const getFollowings = async (
   }
 };
 
-// get followers
 export const getFollowers = async (
   req: Request,
   res: Response
@@ -202,7 +199,6 @@ export const getFollowers = async (
   }
 };
 
-// remove following
 export const removeFollowing = async (
   req: Request,
   res: Response
@@ -383,7 +379,6 @@ const updateOtherData = async (
   await user.save();
 };
 
-//check following
 export const checkFollowing = async (
   req: Request,
   res: Response

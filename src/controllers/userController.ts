@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
 
-//get current user
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
     const userEmail = (req as any).user?.email;
@@ -21,7 +20,6 @@ export const getCurrentUser = async (req: Request, res: Response) => {
   }
 };
 
-//get all users
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await db.User.findAll({
@@ -49,7 +47,6 @@ export const getAllUsers = async (req: Request, res: Response) => {
   }
 };
 
-//get user by id
 export const getUserById = async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params.id as string, 10);
@@ -88,7 +85,6 @@ export const getUserById = async (req: Request, res: Response) => {
   }
 };
 
-// search for new user
 export const searchUser = async (req: Request, res: Response) => {
   try {
     const { username } = req.params;
@@ -139,7 +135,6 @@ export const searchUser = async (req: Request, res: Response) => {
   }
 };
 
-//latest 3 users
 export const latestUsers = async (
   req: Request,
   res: Response

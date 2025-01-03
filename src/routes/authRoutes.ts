@@ -38,6 +38,7 @@ import {
 } from '../controllers/followController';
 import { getPostByUserId } from '../controllers/postController';
 import { searchQuery } from '../controllers/searchController';
+import { createEvent } from '../controllers/eventController';
 
 const router = express.Router();
 
@@ -78,5 +79,6 @@ router.get(
   authenticate,
   checkFollowing
 );
+router.post('/create-event', authenticate, createEvent);
 
 export default router;

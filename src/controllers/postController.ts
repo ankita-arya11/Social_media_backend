@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
 
-//create post
 export const createPost = async (req: Request, res: Response) => {
   const { userId, content, mediaUrls } = req.body;
 
@@ -44,7 +43,6 @@ export const createPost = async (req: Request, res: Response) => {
   }
 };
 
-//get post
 export const getPost = async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
@@ -89,7 +87,6 @@ export const getPost = async (req: Request, res: Response) => {
   }
 };
 
-//get all post
 export const getAllPost = async (req: Request, res: Response) => {
   try {
     const posts = await db.Post.findAll({
@@ -128,7 +125,6 @@ export const getAllPost = async (req: Request, res: Response) => {
   }
 };
 
-//get post by user id
 export const getPostByUserId = async (req: Request, res: Response) => {
   const { userId } = req.params;
 
@@ -169,7 +165,6 @@ export const getPostByUserId = async (req: Request, res: Response) => {
   }
 };
 
-//delete post
 export const deletePost = async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
@@ -197,7 +192,6 @@ export const deletePost = async (req: Request, res: Response) => {
   }
 };
 
-//like and unlike
 export const likeAndUnlikePost = async (req: Request, res: Response) => {
   const { userId, postId } = req.body;
 
@@ -239,7 +233,6 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
   }
 };
 
-//latest 3 posts
 export const latestPosts = async (
   req: Request,
   res: Response
@@ -247,8 +240,16 @@ export const latestPosts = async (
   try {
     const latestPosts = await db.Post.findAll({
       order: [['createdAt', 'DESC']],
-      limit: 3,
-      attributes: ['id', 'content', 'userId', 'mediaUrls', 'createdAt'],
+      limit: 4,
+      attributes: [
+        'id',
+        'content',
+        'userId',
+        'likesCount',
+        'commentsCount',
+        'mediaUrls',
+        'createdAt',
+      ],
       include: [
         {
           model: db.User,

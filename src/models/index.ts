@@ -5,6 +5,7 @@ import Comment from './comment';
 import CommentLike from './commentLike';
 import FollowingList from './followingList';
 import FollowerList from './followerList';
+import Event from './event';
 import { setupAssociations } from './association';
 
 setupAssociations();
@@ -17,6 +18,7 @@ const db = {
   CommentLike,
   FollowingList,
   FollowerList,
+  Event,
 };
 
 export default db;

@@ -49,7 +49,6 @@ export const singleUploadToCloudinary = async (
         }
       }
     );
-
     stream.end(files.buffer);
   });
 };
