@@ -1,24 +1,28 @@
-import { Model, DataTypes } from 'sequelize';
+import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '../db/db';
+import User from './user';
 
 export interface EventAttributes {
-  id: string;
+  id: number;
+  userId: number;
   name: string;
   description?: string;
   eventDate: Date;
   location?: string;
-  status?: 'upcoming' | 'ongoing' | 'completed';
-
+  status?: 'upcoming' | 'ongoing' | 'completed' | 'today';
   mediaUrls?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }
 
+interface EventCreationAttributes extends Optional<EventAttributes, 'id'> {}
+
 export default class Event
-  extends Model<EventAttributes>
+  extends Model<EventAttributes, EventCreationAttributes>
   implements EventAttributes
 {
-  public id!: string;
+  public id!: number;
+  public userId!: number;
   public name!: string;
   public description?: string;
   public eventDate!: Date;
@@ -32,9 +36,17 @@ export default class Event
 Event.init(
   {
     id: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
       primaryKey: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: User,
+        key: 'id',
+      },
     },
     name: {
       type: DataTypes.STRING,
@@ -54,7 +66,6 @@ Event.init(
       type: DataTypes.ENUM('upcoming', 'ongoing', 'completed'),
       allowNull: false,
     },
-
     mediaUrls: {
       type: DataTypes.ARRAY(DataTypes.STRING),
     },
@@ -62,7 +73,13 @@ Event.init(
   {
     sequelize,
     modelName: 'Event',
-    tableName: 'event',
+    tableName: 'events', // Changed to plural
     timestamps: true,
   }
 );
+
+// Association with User model
+Event.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user',
+});

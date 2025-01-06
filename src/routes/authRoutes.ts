@@ -17,6 +17,7 @@ import {
   likeAndUnlikePost,
   deletePost,
   latestPosts,
+  editPost,
 } from '../controllers/postController';
 import { authenticate } from '../middlewares/authToken';
 import {
@@ -38,7 +39,11 @@ import {
 } from '../controllers/followController';
 import { getPostByUserId } from '../controllers/postController';
 import { searchQuery } from '../controllers/searchController';
-import { createEvent } from '../controllers/eventController';
+import {
+  createEvent,
+  deleteEvent,
+  getEvents,
+} from '../controllers/eventController';
 
 const router = express.Router();
 
@@ -56,22 +61,22 @@ router.post('/create-post', authenticate, createPost);
 router.post('/create-comment', authenticate, createComment);
 router.post('/post/like-unlike', authenticate, likeAndUnlikePost);
 router.get('/get-post/:postId', authenticate, getPost);
+router.get('/get-post-by-userId/:userId', authenticate, getPostByUserId);
 router.get('/get-posts', authenticate, getAllPost);
+router.delete('/delete-post/:postId', authenticate, deletePost);
 router.get('/me', authenticate, getCurrentUser);
 router.post('/profile-update', authenticate, profileUpdate);
-router.delete('/delete-post/:postId', authenticate, deletePost);
 router.delete('/delete-comment/:commentId', authenticate, deleteComment);
 router.get('/get-user-by-id/:id', authenticate, getUserById);
 router.get('/get-all-users', authenticate, getAllUsers);
-router.get('/get-post-by-userId/:userId', authenticate, getPostByUserId);
 router.post('/add-following/:userId', authenticate, addFollowing);
+router.get('/latest-users', authenticate, latestUsers);
 router.post('/add-follower/:userId', authenticate, addFollower);
 router.get('/get-followings/:userId', authenticate, getFollowings);
 router.get('/get-followers/:userId', authenticate, getFollowers);
 router.post('/remove-following/:userId', authenticate, removeFollowing);
 router.post('/remove-follower/:userId', authenticate, removeFollower);
 router.get('/search-user/:username', authenticate, searchUser);
-router.get('/latest-users', authenticate, latestUsers);
 router.get('/latest-posts', authenticate, latestPosts);
 router.get('/search/:query', authenticate, searchQuery);
 router.get(
@@ -80,5 +85,8 @@ router.get(
   checkFollowing
 );
 router.post('/create-event', authenticate, createEvent);
+router.get('/get-events', getEvents);
+router.delete('/delete-event/:eventId', deleteEvent);
+router.put('/edit-post/:postId', editPost);
 
 export default router;

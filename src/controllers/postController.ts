@@ -50,7 +50,6 @@ export const getPost = async (req: Request, res: Response) => {
     if (!postId) {
       return res.status(400).json({ message: 'Post ID is required' });
     }
-
     const post = await db.Post.findOne({
       where: { id: postId },
       attributes: [
@@ -89,7 +88,11 @@ export const getPost = async (req: Request, res: Response) => {
 
 export const getAllPost = async (req: Request, res: Response) => {
   try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = parseInt(req.query.offset as string) || 0;
     const posts = await db.Post.findAll({
+      limit,
+      offset,
       attributes: [
         'id',
         'userId',
@@ -266,6 +269,52 @@ export const latestPosts = async (
     console.error('Error fetching latest posts:', error);
     return res.status(500).json({
       message: 'Failed to fetch latest posts',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+export const editPost = async (req: Request, res: Response) => {
+  try {
+    const { postId } = req.params;
+    const { content, mediaUrls } = req.body;
+
+    if (!postId) {
+      return res.status(400).json({ message: 'Post ID is required' });
+    }
+
+    if (!content && !mediaUrls) {
+      return res
+        .status(400)
+        .json({
+          message: 'Content or Media URLs must be provided to update the post',
+        });
+    }
+
+    const post = await db.Post.findByPk(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (content) {
+      post.content = content;
+    }
+
+    if (mediaUrls) {
+      post.mediaUrls = mediaUrls;
+    }
+
+    await post.save();
+
+    return res.status(200).json({
+      message: 'Post updated successfully',
+      post,
+    });
+  } catch (error) {
+    console.error('Error editing post:', error);
+    return res.status(500).json({
+      message: 'Failed to edit post',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
