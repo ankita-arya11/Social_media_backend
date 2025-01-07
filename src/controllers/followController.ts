@@ -15,12 +15,18 @@ export const addFollowing = async (
         .json({ message: 'userId and followingId are required' });
     }
 
+    const userIdNum = parseInt(userId, 10);
+    const followingIdNum = parseInt(followingId, 10);
+
+    if (isNaN(userIdNum) || isNaN(followingIdNum)) {
+      return res
+        .status(400)
+        .json({ message: 'userId and followingId must be valid numbers' });
+    }
+
     const usersExist = await db.User.findAll({
-      where: {
-        id: [userId, followingId],
-      },
+      where: { id: [userIdNum, followingIdNum] },
     });
-    const userIdNum = Number(userId);
 
     if (usersExist.length !== 2) {
       return res
@@ -29,22 +35,35 @@ export const addFollowing = async (
     }
 
     const followingList = await db.FollowingList.findOne({
-      where: { userId },
+      where: { userId: userIdNum },
     });
 
     if (!followingList) {
       return res.status(404).json({ message: 'Following list not found' });
     }
 
-    if (followingList.following.includes(followingId)) {
+    if (followingList.following.includes(followingIdNum)) {
       return res
         .status(400)
         .json({ message: 'User is already being followed' });
     }
 
-    const updatedFollowing = [...followingList.following, followingId];
-    await followingList.update({ following: updatedFollowing });
+    followingList.following = [...followingList.following, followingIdNum];
+    await followingList.save();
+
+    const followerList = await db.FollowerList.findOne({
+      where: { userId: followingIdNum },
+    });
+
+    if (!followerList) {
+      return res.status(404).json({ message: 'Follower list not found' });
+    }
+
+    followerList.followers = [...followerList.followers, userIdNum];
+    await followerList.save();
+
     await updateOtherData(userIdNum, 'followings', true);
+    // await updateOtherData(followingIdNum, 'friends', true);
 
     return res.status(200).json({
       message: 'User added to following list successfully',
@@ -217,9 +236,7 @@ export const removeFollowing = async (
     }
 
     const usersExist = await db.User.findAll({
-      where: {
-        id: [userIdNum, followingIdNum],
-      },
+      where: { id: [userIdNum, followingIdNum] },
     });
 
     if (usersExist.length !== 2) {
@@ -236,15 +253,10 @@ export const removeFollowing = async (
       return res.status(404).json({ message: 'Following list not found' });
     }
 
-    if (followingList.following.includes(followingIdNum)) {
-      followingList.following = followingList.following.filter(
-        (id) => id !== followingIdNum
-      );
-    }
-
+    followingList.following = followingList.following.filter(
+      (id) => id !== followingIdNum
+    );
     await followingList.save();
-
-    await updateOtherData(userIdNum, 'followings', false);
 
     const followerList = await db.FollowerList.findOne({
       where: { userId: followingIdNum },
@@ -254,14 +266,12 @@ export const removeFollowing = async (
       return res.status(404).json({ message: 'Follower list not found' });
     }
 
-    if (followerList.followers.includes(userIdNum)) {
-      followerList.followers = followerList.followers.filter(
-        (id) => id !== userIdNum
-      );
-    }
-
+    followerList.followers = followerList.followers.filter(
+      (id) => id !== userIdNum
+    );
     await followerList.save();
 
+    await updateOtherData(userIdNum, 'followings', false);
     await updateOtherData(followingIdNum, 'friends', false);
 
     return res.status(200).json({
@@ -321,7 +331,6 @@ export const removeFollower = async (
     }
 
     if (followerList.followers.includes(followerIdInt)) {
-      // return res.status(400).json({ message: 'User is not a follower' });
       followerList.followers = followerList?.followers?.filter(
         (id) => id !== followerIdInt
       );
@@ -337,7 +346,6 @@ export const removeFollower = async (
     }
 
     if (followingList.following.includes(userIdInt)) {
-      // return res.status(400).json({ message: 'User is not being followed' });
       followingList.following = followingList.following.filter(
         (id) => id !== userIdInt
       );
@@ -369,13 +377,16 @@ const updateOtherData = async (
     throw new Error('User not found');
   }
 
-  const otherData = user?.other_data || {};
+  const otherData = user.other_data || {};
   const currentCount = otherData[field] || 0;
+
   otherData[field] = increment
     ? currentCount + 1
     : Math.max(0, currentCount - 1);
+
   user.other_data = otherData;
   user.changed('other_data', true);
+
   await user.save();
 };
 

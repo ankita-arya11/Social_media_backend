@@ -6,29 +6,13 @@ export const createEvent = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const validStatuses = ['upcoming', 'ongoing', 'completed'];
-
   try {
-    const {
-      userId,
-      name,
-      description,
-      eventDate,
-      location,
-      status = 'upcoming',
-    } = req.body;
+    const { userId, name, description, eventDate, location, mediaUrls } =
+      req.body;
 
     if (!name || !eventDate) {
       return res.status(400).json({
         message: 'Name and Event Date are required fields',
-      });
-    }
-
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        message: `Invalid status value. Allowed values: ${validStatuses.join(
-          ', '
-        )}`,
       });
     }
 
@@ -43,7 +27,7 @@ export const createEvent = async (
       description,
       eventDate,
       location,
-      status,
+      mediaUrls: mediaUrls || null,
     });
 
     return res.status(201).json({
@@ -75,14 +59,10 @@ export const getEvents = async (
         'eventDate',
         'location',
         'mediaUrls',
-        'status',
         'createdAt',
       ],
       where: {
-        [Op.and]: [
-          { status: { [Op.ne]: 'completed' } },
-          { eventDate: { [Op.gte]: new Date() } },
-        ],
+        [Op.and]: [{ eventDate: { [Op.gte]: new Date() } }],
       },
       include: [
         {
@@ -91,7 +71,7 @@ export const getEvents = async (
           attributes: ['id', 'username', 'full_name', 'profile_picture'],
         },
       ],
-      order: [['createdAt', 'ASC']],
+      order: [['eventDate', 'ASC']],
     });
 
     return res.status(200).json({

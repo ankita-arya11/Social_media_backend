@@ -24,11 +24,12 @@ export const createPost = async (req: Request, res: Response) => {
       commentsCount: 0,
     });
 
-    const otherData = user?.other_data || {};
-    otherData.posts = (otherData?.posts || 0) + 1;
+    const postCount = await db.Post.count({ where: { userId } });
+
+    const otherData = user.other_data || {};
+    otherData.posts = postCount;
 
     user.other_data = otherData;
-
     user.changed('other_data', true);
 
     await user.save();
@@ -141,6 +142,7 @@ export const getPostByUserId = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
     const posts = await db.Post.findAll({
       where: { userId },
       include: [
@@ -156,9 +158,21 @@ export const getPostByUserId = async (req: Request, res: Response) => {
       order: [['createdAt', 'DESC']],
     });
 
-    return res
-      .status(200)
-      .json({ message: 'Posts retrieved successfully', posts });
+    const postCount = await db.Post.count({ where: { userId } });
+
+    const otherData = user.other_data || {};
+    otherData.posts = postCount;
+
+    user.other_data = otherData;
+    user.changed('other_data', true);
+
+    await user.save();
+
+    return res.status(200).json({
+      message: 'Posts retrieved successfully',
+      posts,
+      postCount,
+    });
   } catch (error) {
     console.error('Error fetching posts:', error);
     return res.status(500).json({
@@ -183,7 +197,23 @@ export const deletePost = async (req: Request, res: Response) => {
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
     }
+
+    const user = await db.User.findByPk(post.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     await post.destroy();
+
+    const postCount = await db.Post.count({ where: { userId: post.userId } });
+
+    const otherData = user.other_data || {};
+    otherData.posts = postCount;
+
+    user.other_data = otherData;
+    user.changed('other_data', true);
+
+    await user.save();
 
     res.status(200).json({ message: 'Post deleted successfully' });
   } catch (error) {
@@ -284,11 +314,9 @@ export const editPost = async (req: Request, res: Response) => {
     }
 
     if (!content && !mediaUrls) {
-      return res
-        .status(400)
-        .json({
-          message: 'Content or Media URLs must be provided to update the post',
-        });
+      return res.status(400).json({
+        message: 'Content or Media URLs must be provided to update the post',
+      });
     }
 
     const post = await db.Post.findByPk(postId);

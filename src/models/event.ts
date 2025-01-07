@@ -9,7 +9,6 @@ export interface EventAttributes {
   description?: string;
   eventDate: Date;
   location?: string;
-  status?: 'upcoming' | 'ongoing' | 'completed' | 'today';
   mediaUrls?: string[];
   createdAt?: Date;
   updatedAt?: Date;
@@ -27,7 +26,6 @@ export default class Event
   public description?: string;
   public eventDate!: Date;
   public location?: string;
-  public status!: 'upcoming' | 'ongoing' | 'completed';
   public mediaUrls?: string[];
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -62,10 +60,6 @@ Event.init(
     location: {
       type: DataTypes.STRING,
     },
-    status: {
-      type: DataTypes.ENUM('upcoming', 'ongoing', 'completed'),
-      allowNull: false,
-    },
     mediaUrls: {
       type: DataTypes.ARRAY(DataTypes.STRING),
     },
@@ -73,13 +67,7 @@ Event.init(
   {
     sequelize,
     modelName: 'Event',
-    tableName: 'events', // Changed to plural
+    tableName: 'events',
     timestamps: true,
   }
 );
-
-// Association with User model
-Event.belongsTo(User, {
-  foreignKey: 'userId',
-  as: 'user',
-});
