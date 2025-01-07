@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import {
   handleOtpVerification,
   handleSendOtp,
@@ -26,6 +26,7 @@ import {
   getAllUsers,
   searchUser,
   latestUsers,
+  getConnectedUser,
 } from '../controllers/userController';
 import { profileUpdate } from '../controllers/profileUpdate';
 import {
@@ -85,8 +86,9 @@ router.get(
   checkFollowing
 );
 router.post('/create-event', authenticate, createEvent);
-router.get('/get-events', getEvents);
-router.delete('/delete-event/:eventId', deleteEvent);
-router.put('/edit-post/:postId', editPost);
+router.get('/get-events', authenticate, getEvents);
+router.delete('/delete-event/:eventId', authenticate, deleteEvent);
+router.put('/edit-post/:postId', authenticate, editPost);
+router.get('/get-connected-user/:userId', authenticate, getConnectedUser);
 
 export default router;
