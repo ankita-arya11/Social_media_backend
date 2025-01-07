@@ -3,6 +3,9 @@ import Post from './post';
 import PostLike from './postLike';
 import Comment from './comment';
 import CommentLike from './commentLike';
+import FollowingList from './followingList';
+import FollowerList from './followerList';
+import Event from './event';
 import { setupAssociations } from './association';
 
 setupAssociations();
@@ -13,5 +16,9 @@ const db = {
   PostLike,
   Comment,
   CommentLike,
+  FollowingList,
+  FollowerList,
+  Event,
 };
+
 export default db;

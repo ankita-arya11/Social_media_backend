@@ -11,17 +11,13 @@ function registerRoutes(currentDir = __dirname) {
 
   for (let i = 0; i < files.length; i += 1) {
     const name = files[i];
-
     const fullPath = path.join(currentDir, name);
-
     const stats = fs.statSync(fullPath);
 
     if (!stats.isDirectory()) {
       continue;
     }
-
     const routesFilePath = path.join(fullPath, routesFileName);
-
     const isRoutesFileExistOnThisDirectory = fs.existsSync(routesFilePath);
 
     if (isRoutesFileExistOnThisDirectory) {
@@ -32,11 +28,9 @@ function registerRoutes(currentDir = __dirname) {
 
       router.use(prefix, require(routesFilePath).default);
     }
-
     registerRoutes(path.join(currentDir, name));
   }
 }
-
 registerRoutes();
 
 export default router;

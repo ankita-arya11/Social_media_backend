@@ -8,8 +8,6 @@ declare global {
   }
 }
 
-// types/express.d.ts
-
 declare namespace Express {
   export interface Request {
     user: {
@@ -22,7 +20,6 @@ declare namespace Express {
   }
 }
 
-// types/express.d.ts or src/express.d.ts
 declare namespace Express {
   export interface Request {
     user: {

@@ -3,6 +3,9 @@ import Post from './post';
 import PostLike from './postLike';
 import Comment from './comment';
 import CommentLike from './commentLike';
+import FollowerList from './followerList';
+import FollowingList from './followingList';
+import Event from './event';
 
 export const setupAssociations = () => {
   User.hasMany(Post, { foreignKey: 'userId' });
@@ -25,4 +28,13 @@ export const setupAssociations = () => {
 
   Comment.hasMany(CommentLike, { foreignKey: 'commentId' });
   CommentLike.belongsTo(Comment, { foreignKey: 'commentId' });
+
+  User.hasMany(FollowerList, { foreignKey: 'userId' });
+  FollowerList.belongsTo(User, { foreignKey: 'userId' });
+
+  User.hasMany(FollowingList, { foreignKey: 'userId' });
+  FollowingList.belongsTo(User, { foreignKey: 'userId' });
+
+  User.hasMany(Event, { foreignKey: 'userId' });
+  Event.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 };
