@@ -5,6 +5,7 @@ import sequelize from './db/db';
 import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
+import { handleSocketConnection } from './helpers/socket';
 dotenv.config();
 
 const app = express();
@@ -27,7 +28,7 @@ const io = new Server(server, {
 app.use(express.json());
 app.use(authRoutes);
 
-// handleSocketConnection(io);
+handleSocketConnection(io);
 
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);

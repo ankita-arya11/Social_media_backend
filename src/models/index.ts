@@ -7,6 +7,7 @@ import FollowingList from './followingList';
 import FollowerList from './followerList';
 import Event from './event';
 import { setupAssociations } from './association';
+import Messsages from './messages';
 
 setupAssociations();
 
@@ -19,6 +20,7 @@ const db = {
   FollowingList,
   FollowerList,
   Event,
+  Messsages,
 };
 
 export default db;
