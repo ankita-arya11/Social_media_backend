@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import { Op } from 'sequelize';
 
 export const getMessages = async (req: Request, res: Response) => {
   const { senderId, receiverId } = req.params;
@@ -29,10 +30,18 @@ export const getMessages = async (req: Request, res: Response) => {
 
     const messages = await db.Messages.findAll({
       where: {
-        sender_id: senderIdInt,
-        receiver_id: receiverIdInt,
+        [Op.or]: [
+          {
+            sender_id: senderIdInt,
+            receiver_id: receiverIdInt,
+          },
+          {
+            sender_id: receiverIdInt,
+            receiver_id: senderIdInt,
+          },
+        ],
       },
-      order: [['timestamp', 'ASC']],
+      order: [['createdAt', 'ASC']],
     });
 
     if (messages.length === 0) {

@@ -39,6 +39,9 @@ export const setupAssociations = () => {
   User.hasMany(Event, { foreignKey: 'userId' });
   Event.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-  User.hasMany(Messages, { foreignKey: 'userId' });
-  Messages.belongsTo(User, { foreignKey: 'userId' });
+  User.hasMany(Messages, { foreignKey: 'sender_id' });
+  Messages.belongsTo(User, { foreignKey: 'sender_id' });
+
+  User.hasMany(Messages, { foreignKey: 'receiver_id' });
+  Messages.belongsTo(User, { foreignKey: 'receiver_id' });
 };

@@ -1,16 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import db from '../models';
 
-interface Message {
-  senderId: string;
-  receiverId: string;
-  text: string;
-  timestamp: Date;
-}
-
 export const handleSocketConnection = (io: Server) => {
   io.on('connection', async (socket: Socket) => {
-    console.log('socket connected', socket.id);
     socket.on('userJoined', async (data) => {
       try {
         console.log('Incoming data:', data);
@@ -33,35 +25,34 @@ export const handleSocketConnection = (io: Server) => {
     socket.on('sendMessage', async (data) => {
       try {
         const parseData = JSON.parse(data);
-        const senderId = parseData.senderId;
-        const receiverId = parseData.receiverId;
-        const text = parseData.text;
-        await db.Messsages.create({
-          sender_id: senderId,
-          receiver_id: receiverId,
-          message: text,
+        const sender_id = parseData.sender_id;
+        const receiver_id = parseData.receiver_id;
+        const message = parseData.message;
+        await db.Messages.create({
+          sender_id: sender_id,
+          receiver_id: receiver_id,
+          message: message,
         });
 
-
         const receiver = await db.User.findOne({
-          where: { id: receiverId },
+          where: { id: receiver_id },
           attributes: ['socket_id'],
         });
 
         const senderInfo = await db.User.findOne({
-          where: { id: senderId },
+          where: { id: sender_id },
           attributes: ['id', 'username', 'full_name', 'profile_picture'],
         });
 
         if (receiver && receiver.socket_id) {
           io.to(receiver.socket_id).emit('receiveMessage', {
-            senderId,
-            text,
-            receiverId,
+            sender_id,
+            message,
+            receiver_id,
             senderInfo,
             timestamp: new Date(),
           });
-          console.log(`Message sent to receiver ${receiverId}`);
+          console.log(`Message sent to receiver ${receiver_id}`);
         }
       } catch (err) {
         console.error('Error handling sendMessage event:', err);
