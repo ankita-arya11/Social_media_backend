@@ -6,6 +6,7 @@ interface UserAttributes {
   username: string | null;
   full_name: string | null;
   email: string;
+  socket_id?: string;
   profile_picture: string | null;
   otp: number | null;
   other_data: Record<string, any> | null;
@@ -26,6 +27,7 @@ class User
   public full_name!: string | null;
   public profile_picture!: string | null;
   public email!: string;
+  public socket_id?: string;
   public otp!: number | null;
   public other_data!: Record<string, any> | null;
 
@@ -50,6 +52,10 @@ User.init(
       allowNull: true,
     },
     profile_picture: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    socket_id: {
       type: DataTypes.STRING,
       allowNull: true,
     },

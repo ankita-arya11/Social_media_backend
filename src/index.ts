@@ -3,10 +3,12 @@ import express from 'express';
 import authRoutes from './routes/authRoutes';
 import sequelize from './db/db';
 import cors from 'cors';
-
+import http from 'http';
+import { Server } from 'socket.io';
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
 const PORT = 5000;
 
 app.use(
@@ -16,8 +18,17 @@ app.use(
   })
 );
 
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+  },
+});
+
 app.use(express.json());
 app.use(authRoutes);
+
+// handleSocketConnection(io);
+
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
   try {
