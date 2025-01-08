@@ -158,3 +158,49 @@ export const latestUsers = async (
     });
   }
 };
+
+export const getConnectedUser = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { userId } = req.params;
+
+  console.log(userId);
+
+  try {
+    const followerList = await db.FollowerList.findOne({
+      where: { userId },
+    });
+
+    const followingList = await db.FollowingList.findOne({
+      where: { userId },
+    });
+
+    if (!followerList || !followingList) {
+      return res.status(404).json({
+        message: 'Follower or Following list not found',
+      });
+    }
+
+    const { followers } = followerList;
+    const { following } = followingList;
+
+    const connectedUserIds = followers.filter((id) => following.includes(id));
+
+    const connectedUsers = await db.User.findAll({
+      where: { id: connectedUserIds },
+      attributes: ['id', 'full_name', 'username', 'profile_picture'],
+    });
+
+    return res.status(200).json({
+      message: 'Connected users fetched successfully',
+      users: connectedUsers,
+    });
+  } catch (error) {
+    console.error('Error fetching connected users:', error);
+    return res.status(500).json({
+      message: 'Failed to fetch connected users',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
