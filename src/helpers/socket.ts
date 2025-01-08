@@ -27,7 +27,7 @@ export const handleSocketConnection = (io: Server) => {
       'sendMessage',
       async ({ senderId, receiverId, text }: Message) => {
         try {
-          await db.Messsages.create({
+          await db.Messages.create({
             sender_id: parseInt(senderId),
             receiver_id: parseInt(receiverId),
             message: text,

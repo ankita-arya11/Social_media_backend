@@ -6,6 +6,7 @@ import CommentLike from './commentLike';
 import FollowerList from './followerList';
 import FollowingList from './followingList';
 import Event from './event';
+import Messages from './messages';
 
 export const setupAssociations = () => {
   User.hasMany(Post, { foreignKey: 'userId' });
@@ -37,4 +38,7 @@ export const setupAssociations = () => {
 
   User.hasMany(Event, { foreignKey: 'userId' });
   Event.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+  User.hasMany(Messages, { foreignKey: 'userId' });
+  Messages.belongsTo(User, { foreignKey: 'userId' });
 };

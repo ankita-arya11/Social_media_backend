@@ -2,22 +2,22 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../db/db';
 import User from './user';
 
-interface MesssagesAttributes {
+interface MessagesAttributes {
   id: number;
   sender_id: number;
   receiver_id: number;
   message: string | null;
 }
 
-interface MesssagesCreationAttributes
+interface MessagesCreationAttributes
   extends Optional<
-    MesssagesAttributes,
+    MessagesAttributes,
     'id' | 'sender_id' | 'receiver_id' | 'message'
   > {}
 
-class Messsages
-  extends Model<MesssagesAttributes, MesssagesCreationAttributes>
-  implements MesssagesAttributes
+class Messages
+  extends Model<MessagesAttributes, MessagesCreationAttributes>
+  implements MessagesAttributes
 {
   public id!: number;
   public sender_id!: number;
@@ -28,7 +28,7 @@ class Messsages
   public readonly updatedAt!: Date;
 }
 
-Messsages.init(
+Messages.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -62,4 +62,4 @@ Messsages.init(
   }
 );
 
-export default Messsages;
+export default Messages;

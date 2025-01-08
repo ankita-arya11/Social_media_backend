@@ -45,6 +45,7 @@ import {
   deleteEvent,
   getEvents,
 } from '../controllers/eventController';
+import { getMessages } from '../controllers/socketController';
 
 const router = express.Router();
 
@@ -90,5 +91,6 @@ router.get('/get-events', authenticate, getEvents);
 router.delete('/delete-event/:eventId', authenticate, deleteEvent);
 router.put('/edit-post/:postId', authenticate, editPost);
 router.get('/get-connected-user/:userId', authenticate, getConnectedUser);
+router.get('/get-messages/:senderId/:receiverId', getMessages);
 
 export default router;
