@@ -30,7 +30,7 @@ app.use(authRoutes);
 
 handleSocketConnection(io);
 
-app.listen(PORT, async () => {
+server.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
   try {
     await sequelize.authenticate();
