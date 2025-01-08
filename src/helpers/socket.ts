@@ -42,6 +42,7 @@ export const handleSocketConnection = (io: Server) => {
           message: text,
         });
 
+
         const receiver = await db.User.findOne({
           where: { id: receiverId },
           attributes: ['socket_id'],
