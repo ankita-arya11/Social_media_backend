@@ -77,39 +77,3 @@ export const deleteMessage = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Failed to delete message' });
   }
 };
-
-// export const clearMessages = async (req: Request, res: Response) => {
-//   const { senderId, receiverId } = req.body;
-
-//   if (!senderId || !receiverId) {
-//     return res
-//       .status(400)
-//       .json({ message: 'Sender ID and Receiver ID are required.' });
-//   }
-
-//   try {
-//     const deletedCount = await db.Messages.destroy({
-//       where: {
-//         [Op.or]: [
-//           { sender_id: senderId, receiver_id: receiverId },
-//           { sender_id: receiverId, receiver_id: senderId },
-//         ],
-//       },
-//     });
-
-//     if (deletedCount > 0) {
-//       return res.status(200).json({
-//         message: 'Chat cleared successfully.',
-//       });
-//     } else {
-//       return res.status(404).json({
-//         message: 'No messages found between the specified users.',
-//       });
-//     }
-//   } catch (error) {
-//     console.error('Error clearing chat:', error);
-//     return res.status(500).json({
-//       message: 'An error occurred while clearing the chat.',
-//     });
-//   }
-// };
