@@ -7,12 +7,13 @@ interface MessagesAttributes {
   sender_id: number;
   receiver_id: number;
   message: string | null;
+  is_read: boolean | false;
 }
 
 interface MessagesCreationAttributes
   extends Optional<
     MessagesAttributes,
-    'id' | 'sender_id' | 'receiver_id' | 'message'
+    'id' | 'sender_id' | 'receiver_id' | 'message' | 'is_read'
   > {}
 
 class Messages
@@ -23,7 +24,7 @@ class Messages
   public sender_id!: number;
   public receiver_id!: number;
   public message!: string | null;
-
+  public is_read!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -51,6 +52,10 @@ Messages.init(
     },
     message: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    is_read: {
+      type: DataTypes.BOOLEAN,
       allowNull: true,
     },
   },

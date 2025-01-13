@@ -32,6 +32,7 @@ export const handleSocketConnection = (io: Server) => {
           sender_id: sender_id,
           receiver_id: receiver_id,
           message: message,
+          is_read: false,
         });
 
         const receiver = await db.User.findOne({
@@ -45,6 +46,9 @@ export const handleSocketConnection = (io: Server) => {
         });
 
         if (receiver && receiver.socket_id) {
+          const unreadMessagesCount = await db.Messages.count({
+            where: { receiver_id, is_read: false },
+          });
           io.to(receiver.socket_id).emit('receiveMessage', {
             sender_id,
             message,
@@ -52,10 +56,46 @@ export const handleSocketConnection = (io: Server) => {
             senderInfo,
             timestamp: new Date(),
           });
+          io.to(receiver.socket_id).emit('newNotification', {
+            sender_id,
+            unreadMessagesCount,
+            receiver_id,
+          });
           console.log(`Message sent to receiver ${receiver_id}`);
         }
       } catch (err) {
         console.error('Error handling sendMessage event:', err);
+      }
+    });
+
+    socket.on('markMessagesAsRead', async (data) => {
+      try {
+        const { userId, senderId } = JSON.parse(data);
+        await db.Messages.update(
+          { is_read: true },
+          {
+            where: { receiver_id: userId, sender_id: senderId, is_read: false },
+          }
+        ); // Count unread messages for the user
+        const unreadMessagesCount = await db.Messages.count({
+          where: { receiver_id: userId, is_read: false },
+        });
+
+        // Fetch the user's socket_id
+        const user = await db.User.findOne({
+          where: { id: userId },
+          attributes: ['socket_id'],
+        });
+
+        if (user && user.socket_id) {
+          // Notify the user with updated unread counts
+          io.to(user.socket_id).emit('newNotification', {
+            sender_id: senderId,
+            unreadMessagesCount,
+          });
+        }
+      } catch (err) {
+        console.error('Error marking messages as read:', err);
       }
     });
 
