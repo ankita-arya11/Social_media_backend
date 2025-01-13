@@ -11,7 +11,7 @@
   "editor.formatOnPaste": false,
   "editor.formatOnType": false,
   "editor.formatOnSaveMode": "file",
-  "files.autoSave": "onFocusChange",
+  "files.autoSave": "off",
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }

@@ -165,8 +165,6 @@ export const getConnectedUser = async (
 ): Promise<Response> => {
   const { userId } = req.params;
 
-  console.log(userId);
-
   try {
     const followerList = await db.FollowerList.findOne({
       where: { userId },
@@ -202,5 +200,41 @@ export const getConnectedUser = async (
       message: 'Failed to fetch connected users',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+};
+
+export const isUserConnected = async (req: Request, res: Response) => {
+  const { userId, followingId } = req.params;
+
+  if (!userId || !followingId) {
+    return res
+      .status(400)
+      .json({ message: 'User ID and Following ID are required' });
+  }
+
+  try {
+    const userIdNum = parseInt(userId, 10);
+    const followingIdNum = parseInt(followingId, 10);
+
+    const userFollows = await db.FollowingList.findOne({
+      where: {
+        userId: userIdNum,
+      },
+    });
+    const followingFollows = await db.FollowerList.findOne({
+      where: {
+        userId: followingIdNum,
+      },
+    });
+
+    const userFollow = userFollows?.following.includes(followingIdNum);
+    const userFriend = followingFollows?.followers.includes(userIdNum);
+
+    const isConnected = !!userFollow && !!userFriend;
+
+    return res.status(200).json({ isConnected });
+  } catch (error) {
+    console.error('Error checking user connection:', error);
+    return res.status(500).json({ message: 'Failed to check connection' });
   }
 };

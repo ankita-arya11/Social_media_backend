@@ -27,6 +27,7 @@ import {
   searchUser,
   latestUsers,
   getConnectedUser,
+  isUserConnected,
 } from '../controllers/userController';
 import { profileUpdate } from '../controllers/profileUpdate';
 import {
@@ -45,7 +46,7 @@ import {
   deleteEvent,
   getEvents,
 } from '../controllers/eventController';
-import { getMessages } from '../controllers/socketController';
+import { deleteMessage, getMessages } from '../controllers/messageController';
 
 const router = express.Router();
 
@@ -91,6 +92,12 @@ router.get('/get-events', authenticate, getEvents);
 router.delete('/delete-event/:eventId', authenticate, deleteEvent);
 router.put('/edit-post/:postId', authenticate, editPost);
 router.get('/get-connected-user/:userId', authenticate, getConnectedUser);
-router.get('/get-messages/:senderId/:receiverId', getMessages);
+router.get('/get-messages/:senderId/:receiverId', authenticate, getMessages);
+router.get(
+  '/is-user-connected/:userId/:followingId',
+  authenticate,
+  isUserConnected
+);
+router.delete('/delete-message/:messageId', authenticate, deleteMessage);
 
 export default router;

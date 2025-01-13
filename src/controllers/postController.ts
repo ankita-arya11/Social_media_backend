@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import sendEmail from '../helpers/email';
+import { io } from '../index';
 
 export const createPost = async (req: Request, res: Response) => {
   const { userId, content, mediaUrls } = req.body;
@@ -33,6 +35,40 @@ export const createPost = async (req: Request, res: Response) => {
     user.changed('other_data', true);
 
     await user.save();
+    io.emit('newPost', true);
+
+    const emailTemplate = `
+      <p>Hello {{recipientName}}!</p>
+      <p>Guess what! {{creatorName}} (Username: {{creatorUsername}}) just shared a new post, and it's worth checking out!</p>
+      <p>🔥 See what's trending now and join the buzz!</p>
+      <p>👉 Click here to view the post: <a href="http://192.168.100.186:3000/dashboard/user/${userId}/posts">View Post</a></p>
+      <p>Stay connected,<br /></p>
+      <p>
+        Socialize<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxFIGZTCDVxnV5EcAxwEik-tGmTdim5vyyAw&s" alt="Socialize Hiteshi Logo" style="width: 15px; height: auto; vertical-align: middle;">Hiteshi
+      </p>
+    `;
+
+    const htmlContent = emailTemplate
+      .replace('{{recipientName}}', 'Shubham')
+      .replace('{{creatorName}}', user.full_name || 'A user')
+      .replace('{{creatorUsername}}', user.username || 'unknown');
+
+    const emailData = {
+      receiver: 'ankita.arya@hiteshi.com',
+      subject: 'New Post Created',
+      text: `Admin! Guess what! ${user.full_name || 'A user'} (Username: ${
+        user.username || 'unknown'
+      }) just shared a brand-new post. Check it out at http://example.com/posts/${
+        newPost.id
+      }`,
+      html: htmlContent,
+    };
+
+    const emailSent = await sendEmail(emailData);
+
+    if (!emailSent) {
+      console.error('Failed to send email notification');
+    }
 
     return res.status(201).json({
       message: 'Post created successfully',

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import db from '../models';
+import { io } from '../index';
 
 export const createEvent = async (
   req: Request,
@@ -29,6 +30,8 @@ export const createEvent = async (
       location,
       mediaUrls: mediaUrls || null,
     });
+
+    io.emit('newEvent', true);
 
     return res.status(201).json({
       message: 'Event created successfully',
@@ -96,14 +99,12 @@ export const deleteEvent = async (
   if (!eventId) {
     return res.status(400).json({ message: 'Event ID is required' });
   }
-
   try {
     const event = await db.Event.findByPk(eventId);
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
-
     await event.destroy();
 
     return res.status(200).json({ message: 'Event deleted successfully' });

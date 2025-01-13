@@ -22,6 +22,21 @@ export const handleSocketConnection = (io: Server) => {
       }
     });
 
+    socket.on('deleteMessage', async (data) => {
+      try {
+        const parseData = JSON.parse(data);
+        const messageId = parseData.messageId;
+
+        const message = await db.Messages.findByPk(messageId);
+
+        if (message) {
+          await message.destroy();
+          socket.emit('messageDeleted', message);
+        }
+      } catch (err) {
+        console.error('Failed to delete message', err);
+      }
+    });
     socket.on('sendMessage', async (data) => {
       try {
         const parseData = JSON.parse(data);
@@ -76,19 +91,17 @@ export const handleSocketConnection = (io: Server) => {
           {
             where: { receiver_id: userId, sender_id: senderId, is_read: false },
           }
-        ); // Count unread messages for the user
+        );
         const unreadMessagesCount = await db.Messages.count({
           where: { receiver_id: userId, is_read: false },
         });
 
-        // Fetch the user's socket_id
         const user = await db.User.findOne({
           where: { id: userId },
           attributes: ['socket_id'],
         });
 
         if (user && user.socket_id) {
-          // Notify the user with updated unread counts
           io.to(user.socket_id).emit('newNotification', {
             sender_id: senderId,
             unreadMessagesCount,

@@ -1,0 +1,115 @@
+import { Request, Response } from 'express';
+import db from '../models';
+import { Op } from 'sequelize';
+
+export const getMessages = async (req: Request, res: Response) => {
+  const { senderId, receiverId } = req.params;
+
+  if (!senderId || !receiverId) {
+    return res
+      .status(400)
+      .json({ message: 'senderId and receiverId are required' });
+  }
+
+  const senderIdInt = parseInt(senderId);
+  const receiverIdInt = parseInt(receiverId);
+
+  if (isNaN(senderIdInt) || isNaN(receiverIdInt)) {
+    return res
+      .status(400)
+      .json({ message: 'senderId and receiverId must be valid numbers' });
+  }
+
+  try {
+    const senderExists = await db.User.findByPk(senderIdInt);
+    const receiverExists = await db.User.findByPk(receiverIdInt);
+
+    if (!senderExists || !receiverExists) {
+      return res.status(404).json({ message: 'Sender or Receiver not found' });
+    }
+
+    const messages = await db.Messages.findAll({
+      where: {
+        [Op.or]: [
+          {
+            sender_id: senderIdInt,
+            receiver_id: receiverIdInt,
+          },
+          {
+            sender_id: receiverIdInt,
+            receiver_id: senderIdInt,
+          },
+        ],
+      },
+      order: [['createdAt', 'ASC']],
+    });
+
+    if (messages.length === 0) {
+      return res.status(200).json({ messages: [] });
+    }
+    return res.status(200).json({ messages });
+  } catch (err) {
+    console.error('Error fetching messages:', err);
+    return res
+      .status(500)
+      .json({ message: 'An error occurred while fetching messages' });
+  }
+};
+
+export const deleteMessage = async (req: Request, res: Response) => {
+  const { messageId } = req.params;
+
+  if (!messageId) {
+    return res.status(400).json({ message: 'Message ID is required' });
+  }
+
+  try {
+    const message = await db.Messages.findByPk(messageId);
+
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+    await message.destroy();
+
+    return res.status(200).json({ message: 'Message deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    return res.status(500).json({ message: 'Failed to delete message' });
+  }
+};
+
+// export const clearMessages = async (req: Request, res: Response) => {
+//   const { senderId, receiverId } = req.body;
+
+//   if (!senderId || !receiverId) {
+//     return res
+//       .status(400)
+//       .json({ message: 'Sender ID and Receiver ID are required.' });
+//   }
+
+//   try {
+//     const deletedCount = await db.Messages.destroy({
+//       where: {
+//         [Op.or]: [
+//           { sender_id: senderId, receiver_id: receiverId },
+//           { sender_id: receiverId, receiver_id: senderId },
+//         ],
+//       },
+//     });
+
+//     if (deletedCount > 0) {
+//       return res.status(200).json({
+//         message: 'Chat cleared successfully.',
+//       });
+//     } else {
+//       return res.status(404).json({
+//         message: 'No messages found between the specified users.',
+//       });
+//     }
+//   } catch (error) {
+//     console.error('Error clearing chat:', error);
+//     return res.status(500).json({
+//       message: 'An error occurred while clearing the chat.',
+//     });
+//   }
+// };
