@@ -221,14 +221,15 @@ export const isUserConnected = async (req: Request, res: Response) => {
         userId: userIdNum,
       },
     });
+
     const followingFollows = await db.FollowerList.findOne({
       where: {
-        userId: followingIdNum,
+        userId: userIdNum,
       },
     });
 
     const userFollow = userFollows?.following.includes(followingIdNum);
-    const userFriend = followingFollows?.followers.includes(userIdNum);
+    const userFriend = followingFollows?.followers.includes(followingIdNum);
 
     const isConnected = !!userFollow && !!userFriend;
 

@@ -31,7 +31,6 @@ import {
 } from '../controllers/userController';
 import { profileUpdate } from '../controllers/profileUpdate';
 import {
-  addFollower,
   addFollowing,
   checkFollowing,
   getFollowers,
@@ -74,7 +73,6 @@ router.get('/get-user-by-id/:id', authenticate, getUserById);
 router.get('/get-all-users', authenticate, getAllUsers);
 router.post('/add-following/:userId', authenticate, addFollowing);
 router.get('/latest-users', authenticate, latestUsers);
-router.post('/add-follower/:userId', authenticate, addFollower);
 router.get('/get-followings/:userId', authenticate, getFollowings);
 router.get('/get-followers/:userId', authenticate, getFollowers);
 router.post('/remove-following/:userId', authenticate, removeFollowing);

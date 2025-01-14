@@ -44,7 +44,7 @@ export const createPost = async (req: Request, res: Response) => {
       <p>👉 Click here to view the post: <a href="http://192.168.100.186:3000/dashboard/user/${userId}/posts">View Post</a></p>
       <p>Stay connected,<br /></p>
       <p>
-        Socialize<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxFIGZTCDVxnV5EcAxwEik-tGmTdim5vyyAw&s" alt="Socialize Hiteshi Logo" style="width: 15px; height: auto; vertical-align: middle;">Hiteshi
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxFIGZTCDVxnV5EcAxwEik-tGmTdim5vyyAw&s" alt="Socialize Hiteshi Logo" style="width: 15px; height: auto; vertical-align: middle;">Socialize@Hiteshi
       </p>
     `;
 

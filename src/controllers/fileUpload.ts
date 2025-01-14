@@ -12,10 +12,8 @@ export const mulipleFileUpload = async (req: Request, res: Response) => {
 
     const folderName = 'images';
     const files = req.files as Express.Multer.File[];
-    console.log(files, 'hello I am file');
 
     const uploadResults = await uploadToCloudinary(files, folderName);
-    console.log(uploadResults, 'upload result......');
 
     const mediaUrls = uploadResults.map((result) => result.url);
 

@@ -63,6 +63,7 @@ export const addFollowing = async (
     await followerList.save();
 
     await updateOtherData(userIdNum, 'followings', true);
+    await updateOtherData(followingIdNum, 'friends', true);
 
     return res.status(200).json({
       message: 'User added to following list successfully',

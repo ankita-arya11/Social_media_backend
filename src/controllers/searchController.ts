@@ -40,9 +40,18 @@ export const searchQuery = async (
 
     const users = await db.User.findAll({
       where: {
-        username: {
-          [Op.iLike]: `%${query}%`,
-        },
+        [Op.or]: [
+          {
+            username: {
+              [Op.iLike]: `%${query}%`,
+            },
+          },
+          {
+            full_name: {
+              [Op.iLike]: `%${query}%`,
+            },
+          },
+        ],
       },
       attributes: ['id', 'username', 'full_name', 'profile_picture'],
     });

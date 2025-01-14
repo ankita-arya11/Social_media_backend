@@ -26,23 +26,35 @@ export const handleSocketConnection = (io: Server) => {
       try {
         const parseData = JSON.parse(data);
         const messageId = parseData.messageId;
+        let receiver_id = 0;
 
         const message = await db.Messages.findByPk(messageId);
 
         if (message) {
+          receiver_id = message?.receiver_id;
           await message.destroy();
-          socket.emit('messageDeleted', message);
+        }
+
+        const receiver = await db.User.findOne({
+          where: { id: receiver_id },
+          attributes: ['socket_id'],
+        });
+
+        if (receiver && receiver.socket_id) {
+          io.to(receiver.socket_id).emit('messageDeleted', message);
         }
       } catch (err) {
         console.error('Failed to delete message', err);
       }
     });
+
     socket.on('sendMessage', async (data) => {
       try {
         const parseData = JSON.parse(data);
         const sender_id = parseData.sender_id;
         const receiver_id = parseData.receiver_id;
         const message = parseData.message;
+
         await db.Messages.create({
           sender_id: sender_id,
           receiver_id: receiver_id,
