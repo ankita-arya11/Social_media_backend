@@ -81,7 +81,6 @@ export const handleSendOtp = async (req: Request, res: Response) => {
   }
 };
 
-//otp verification
 export const handleOtpVerification = async (req: Request, res: Response) => {
   const { email, otp, username, full_name } = req.body;
 

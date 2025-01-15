@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
 
-//create comment
 export const createComment = async (req: Request, res: Response) => {
   const { userId, postId, comment } = req.body;
 
@@ -31,7 +30,6 @@ export const createComment = async (req: Request, res: Response) => {
   }
 };
 
-//delete comment
 export const deleteComment = async (req: Request, res: Response) => {
   try {
     const { commentId } = req.params;
@@ -60,7 +58,6 @@ export const deleteComment = async (req: Request, res: Response) => {
   }
 };
 
-//get comments by id
 export const getCommentsByPostId = async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;

@@ -5,7 +5,6 @@ export const handleSocketConnection = (io: Server) => {
   io.on('connection', async (socket: Socket) => {
     socket.on('userJoined', async (data) => {
       try {
-        console.log('Incoming data:', data);
         const parseData = JSON.parse(data);
         const userId = parseData.userId;
         if (typeof userId !== 'number') {
@@ -88,7 +87,6 @@ export const handleSocketConnection = (io: Server) => {
             unreadMessagesCount,
             receiver_id,
           });
-          console.log(`Message sent to receiver ${receiver_id}`);
         }
       } catch (err) {
         console.error('Error handling sendMessage event:', err);
