@@ -51,9 +51,9 @@ export const getEvents = async (
   res: Response
 ): Promise<Response> => {
   try {
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : null;
+
     const events = await db.Event.findAll({
-      limit,
       attributes: [
         'id',
         'userId',
@@ -75,6 +75,7 @@ export const getEvents = async (
         },
       ],
       order: [['eventDate', 'ASC']],
+      ...(limit ? { limit } : {}),
     });
 
     return res.status(200).json({

@@ -22,7 +22,13 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : null;
+    const offset = req.query.limit
+      ? parseInt(req.query.offset as string)
+      : null;
     const users = await db.User.findAll({
+      ...(limit ? { limit } : {}),
+      ...(offset ? { offset } : {}),
       attributes: [
         'id',
         'username',

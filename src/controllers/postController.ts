@@ -125,11 +125,13 @@ export const getPost = async (req: Request, res: Response) => {
 
 export const getAllPost = async (req: Request, res: Response) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 10;
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : null;
+    const offset = req.query.limit
+      ? parseInt(req.query.offset as string)
+      : null;
     const posts = await db.Post.findAll({
-      limit,
-      offset,
+      ...(limit ? { limit } : {}),
+      ...(offset ? { offset } : {}),
       attributes: [
         'id',
         'userId',
