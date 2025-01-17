@@ -33,6 +33,12 @@ export const createEvent = async (
 
     io.emit('newEvent', true);
 
+    // await db.EventNotification.create({
+    //   userId,
+    //   type: 'newEvent',
+    //   eventNotify: newEvent,
+    // });
+
     return res.status(201).json({
       message: 'Event created successfully',
       event: newEvent,

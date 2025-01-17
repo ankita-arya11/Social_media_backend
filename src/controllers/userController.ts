@@ -149,7 +149,14 @@ export const latestUsers = async (
     const latestUsers = await db.User.findAll({
       order: [['createdAt', 'DESC']],
       limit: 5,
-      attributes: ['id', 'username', 'full_name', 'email', 'createdAt'],
+      attributes: [
+        'id',
+        'username',
+        'full_name',
+        'email',
+        'profile_picture',
+        'createdAt',
+      ],
     });
 
     return res.status(200).json({

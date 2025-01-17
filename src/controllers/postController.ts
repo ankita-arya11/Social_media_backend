@@ -70,6 +70,12 @@ export const createPost = async (req: Request, res: Response) => {
       console.error('Failed to send email notification');
     }
 
+    // await db.EventNotification.create({
+    //   userId,
+    //   type: 'newPost',
+    //   eventNotify: newPost,
+    // });
+
     return res.status(201).json({
       message: 'Post created successfully',
       post: newPost,
@@ -272,6 +278,33 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
     });
   }
 
+  const post = await db.Post.findOne({
+    where: { id: postId },
+  });
+
+  if (post && userId) {
+    const user = await db.User.findOne({
+      where: { id: userId },
+      attributes: ['username', 'full_name', 'id', 'profile_picture'],
+    });
+    if (user) {
+      await db.MyNotification.create({
+        userId: post.userId,
+        type: 'like',
+        isRead: false,
+        notifyData: {
+          postId: postId,
+          likedByUser: {
+            id: user.id,
+            username: user.username,
+            full_name: user.full_name,
+            profile_picture: user.profile_picture,
+          },
+        },
+      });
+    }
+  }
+
   try {
     const existingLike = await db.PostLike.findOne({
       where: { userId, postId },
@@ -324,7 +357,7 @@ export const latestPosts = async (
       include: [
         {
           model: db.User,
-          attributes: ['id', 'username', 'full_name'],
+          attributes: ['id', 'username', 'profile_picture', 'full_name'],
         },
       ],
     });
