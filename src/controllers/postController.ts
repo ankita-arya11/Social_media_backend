@@ -6,10 +6,10 @@ import { io } from '../index';
 export const createPost = async (req: Request, res: Response) => {
   const { userId, content, mediaUrls } = req.body;
 
-  if (!userId || !content || !mediaUrls) {
+  if (!userId || !mediaUrls) {
     return res
       .status(400)
-      .json({ message: 'User ID, content, and media URL are required' });
+      .json({ message: 'User ID, and media URL are required' });
   }
 
   try {
@@ -69,12 +69,6 @@ export const createPost = async (req: Request, res: Response) => {
     if (!emailSent) {
       console.error('Failed to send email notification');
     }
-
-    // await db.EventNotification.create({
-    //   userId,
-    //   type: 'newPost',
-    //   eventNotify: newPost,
-    // });
 
     return res.status(201).json({
       message: 'Post created successfully',
@@ -288,20 +282,38 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
       attributes: ['username', 'full_name', 'id', 'profile_picture'],
     });
     if (user) {
-      await db.MyNotification.create({
-        userId: post.userId,
-        type: 'like',
-        isRead: false,
-        notifyData: {
-          postId: postId,
-          likedByUser: {
-            id: user.id,
-            username: user.username,
-            full_name: user.full_name,
-            profile_picture: user.profile_picture,
-          },
-        },
+      const existingLike = await db.PostLike.findOne({
+        where: { userId, postId },
       });
+      if (existingLike) {
+        await db.MyNotification.destroy({
+          where: {
+            userId: post.userId,
+            type: 'like',
+            notifyData: {
+              postId,
+              user: {
+                id: user.id,
+              },
+            },
+          },
+        });
+      } else {
+        await db.MyNotification.create({
+          userId: post.userId,
+          type: 'like',
+          isRead: false,
+          notifyData: {
+            postId: postId,
+            user: {
+              id: user.id,
+              username: user.username,
+              full_name: user.full_name,
+              profile_picture: user.profile_picture,
+            },
+          },
+        });
+      }
     }
   }
 

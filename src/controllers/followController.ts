@@ -65,6 +65,27 @@ export const addFollowing = async (
     await updateOtherData(userIdNum, 'followings', true);
     await updateOtherData(followingIdNum, 'friends', true);
 
+    const follower = await db.User.findOne({
+      where: { id: userIdNum },
+      attributes: ['id', 'username', 'full_name', 'profile_picture'],
+    });
+
+    if (follower) {
+      await db.MyNotification.create({
+        userId: followingIdNum,
+        type: 'follow',
+        isRead: false,
+        notifyData: {
+          user: {
+            id: follower.id,
+            username: follower.username,
+            full_name: follower.full_name,
+            profile_picture: follower.profile_picture,
+          },
+        },
+      });
+    }
+
     return res.status(200).json({
       message: 'User added to following list successfully',
       followingList,

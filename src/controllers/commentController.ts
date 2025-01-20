@@ -20,6 +20,37 @@ export const createComment = async (req: Request, res: Response) => {
 
     await db.Post.increment('commentsCount', { where: { id: postId } });
 
+    const post = await db.Post.findByPk(postId, {
+      attributes: ['userId'],
+    });
+
+    if (post) {
+      const commenter = await db.User.findByPk(userId, {
+        attributes: ['id', 'username', 'full_name', 'profile_picture'],
+      });
+
+      if (commenter) {
+        await db.MyNotification.create({
+          userId: post.userId,
+          type: 'comment',
+          isRead: false,
+          notifyData: {
+            postId: postId,
+            comment: {
+              id: newComment.id,
+              text: comment,
+            },
+            user: {
+              id: commenter.id,
+              username: commenter.username,
+              full_name: commenter.full_name,
+              profile_picture: commenter.profile_picture,
+            },
+          },
+        });
+      }
+    }
+
     return res.status(201).json({
       message: 'Comment created successfully',
       comment: newComment,

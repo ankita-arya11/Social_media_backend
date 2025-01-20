@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import { Sequelize } from 'sequelize';
 
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
@@ -203,9 +204,35 @@ export const getConnectedUser = async (
       attributes: ['id', 'full_name', 'username', 'profile_picture'],
     });
 
+    const unreadCounts = await db.Messages.findAll({
+      where: {
+        sender_id: connectedUserIds,
+        receiver_id: userId,
+        is_read: false,
+      },
+      attributes: ['sender_id', [Sequelize.fn('COUNT', '*'), 'unreadCount']],
+      group: ['sender_id'],
+    });
+
+    const unreadCountMap: Record<number, number> = {};
+    unreadCounts.forEach((count: any) => {
+      unreadCountMap[count.sender_id] = parseInt(
+        count.dataValues.unreadCount,
+        10
+      );
+    });
+
+    const connectedUsersWithCounts = connectedUsers.map((user) => ({
+      id: user.id,
+      full_name: user.full_name,
+      username: user.username,
+      profile_picture: user.profile_picture,
+      unreadCount: unreadCountMap[user.id] || 0,
+    }));
+
     return res.status(200).json({
-      message: 'Connected users fetched successfully',
-      users: connectedUsers,
+      message: 'Connected users with message counts fetched successfully',
+      users: connectedUsersWithCounts,
     });
   } catch (error) {
     console.error('Error fetching connected users:', error);
