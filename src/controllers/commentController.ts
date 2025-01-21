@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import { io } from '../index';
 
 export const createComment = async (req: Request, res: Response) => {
   const { userId, postId, comment } = req.body;
@@ -29,6 +30,17 @@ export const createComment = async (req: Request, res: Response) => {
         attributes: ['id', 'username', 'full_name', 'profile_picture'],
       });
 
+      const postUser = await db.User.findOne({
+        where: { id: userId },
+        attributes: [
+          'username',
+          'full_name',
+          'socket_id',
+          'id',
+          'profile_picture',
+        ],
+      });
+
       if (commenter) {
         await db.MyNotification.create({
           userId: post.userId,
@@ -48,6 +60,9 @@ export const createComment = async (req: Request, res: Response) => {
             },
           },
         });
+        if (postUser?.socket_id) {
+          io.to(postUser.socket_id).emit('newComment');
+        }
       }
     }
 

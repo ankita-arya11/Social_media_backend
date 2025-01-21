@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import { io } from '..';
 
 export const addFollowing = async (
   req: Request,
@@ -70,6 +71,15 @@ export const addFollowing = async (
       attributes: ['id', 'username', 'full_name', 'profile_picture'],
     });
 
+    const followingUser = await db.User.findOne({
+      where: { id: followingIdNum },
+      attributes: ['id', 'socket_id'],
+    });
+
+    if (!followingUser) {
+      return res.status(404).json({ message: 'Following user not found' });
+    }
+
     if (follower) {
       await db.MyNotification.create({
         userId: followingIdNum,
@@ -84,6 +94,15 @@ export const addFollowing = async (
           },
         },
       });
+
+      if (followingUser.socket_id) {
+        io.to(followingUser.socket_id).emit('newFollow', {
+          userId: follower.id,
+          username: follower.username,
+          full_name: follower.full_name,
+          profile_picture: follower.profile_picture,
+        });
+      }
     }
 
     return res.status(200).json({

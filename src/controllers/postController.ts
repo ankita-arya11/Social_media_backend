@@ -103,6 +103,10 @@ export const getPost = async (req: Request, res: Response) => {
           model: db.User,
           attributes: ['id', 'username', 'full_name', 'profile_picture'],
         },
+        {
+          model: db.PostLike,
+          attributes: ['userId', 'reactionId'],
+        },
       ],
     });
 
@@ -110,9 +114,18 @@ export const getPost = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
+    const postJson = post.toJSON();
+    const likes = postJson.PostLikes || [];
+    const uniqueReactionIds = Array.from(
+      new Set(likes.map((like) => like.reactionId))
+    );
+
     res.status(200).json({
       message: 'Post fetched successfully',
-      post,
+      post: {
+        ...postJson,
+        reactionIds: uniqueReactionIds,
+      },
     });
   } catch (error) {
     console.error('Error fetching post:', error);
@@ -148,15 +161,27 @@ export const getAllPost = async (req: Request, res: Response) => {
         },
         {
           model: db.PostLike,
-          attributes: ['userId'],
+          attributes: ['userId', 'reactionId'],
         },
       ],
       order: [['createdAt', 'DESC']],
     });
 
+    const processedPosts = posts.map((post) => {
+      const postJson = post.toJSON();
+      const likes = postJson.PostLikes || [];
+      const uniqueReactionIds = Array.from(
+        new Set(likes.map((like) => like.reactionId))
+      );
+      return {
+        ...postJson,
+        reactionIds: uniqueReactionIds,
+      };
+    });
+
     res.status(200).json({
       message: 'Posts fetched successfully',
-      posts,
+      posts: processedPosts,
     });
   } catch (error) {
     console.error('Error fetching post:', error);
@@ -264,7 +289,7 @@ export const deletePost = async (req: Request, res: Response) => {
 };
 
 export const likeAndUnlikePost = async (req: Request, res: Response) => {
-  const { userId, postId } = req.body;
+  const { userId, postId, reactionId } = req.body;
 
   if (!userId || !postId) {
     return res.status(400).json({
@@ -276,29 +301,30 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
     where: { id: postId },
   });
 
+  let postUser;
+  if (post) {
+    postUser = await db.User.findOne({
+      where: { id: userId },
+      attributes: [
+        'username',
+        'full_name',
+        'socket_id',
+        'id',
+        'profile_picture',
+      ],
+    });
+  }
+
   if (post && userId) {
     const user = await db.User.findOne({
       where: { id: userId },
       attributes: ['username', 'full_name', 'id', 'profile_picture'],
     });
-    if (user) {
+    if (user && reactionId) {
       const existingLike = await db.PostLike.findOne({
         where: { userId, postId },
       });
-      if (existingLike) {
-        await db.MyNotification.destroy({
-          where: {
-            userId: post.userId,
-            type: 'like',
-            notifyData: {
-              postId,
-              user: {
-                id: user.id,
-              },
-            },
-          },
-        });
-      } else {
+      if (!existingLike) {
         await db.MyNotification.create({
           userId: post.userId,
           type: 'like',
@@ -313,6 +339,13 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
             },
           },
         });
+        if (postUser?.socket_id) {
+          io.to(postUser.socket_id).emit('newLike');
+        }
+      } else {
+        await db.PostLike.update(reactionId, {
+          where: { userId, postId },
+        });
       }
     }
   }
@@ -322,9 +355,22 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
       where: { userId, postId },
     });
 
-    if (existingLike) {
+    if (existingLike && post && !reactionId) {
       await existingLike.destroy();
       await db.Post.decrement('likesCount', { where: { id: postId } });
+
+      await db.MyNotification.destroy({
+        where: {
+          userId: post.userId,
+          type: 'like',
+          notifyData: {
+            postId,
+            user: {
+              id: userId,
+            },
+          },
+        },
+      });
 
       return res.status(200).json({
         message: 'post unliked successfully',
@@ -333,9 +379,11 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
       const newLike = await db.PostLike.create({
         userId,
         postId,
+        reactionId,
       });
 
       await db.Post.increment('likesCount', { where: { id: postId } });
+
       return res.status(201).json({
         message: 'post liked successfully',
         like: newLike,
