@@ -293,106 +293,99 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
 
   if (!userId || !postId) {
     return res.status(400).json({
-      message: 'user id and post id are required',
+      message: 'User ID and Post ID are required',
     });
-  }
-
-  const post = await db.Post.findOne({
-    where: { id: postId },
-  });
-
-  let postUser;
-  if (post) {
-    postUser = await db.User.findOne({
-      where: { id: userId },
-      attributes: [
-        'username',
-        'full_name',
-        'socket_id',
-        'id',
-        'profile_picture',
-      ],
-    });
-  }
-
-  if (post && userId) {
-    const user = await db.User.findOne({
-      where: { id: userId },
-      attributes: ['username', 'full_name', 'id', 'profile_picture'],
-    });
-    if (user && reactionId) {
-      const existingLike = await db.PostLike.findOne({
-        where: { userId, postId },
-      });
-      if (!existingLike) {
-        await db.MyNotification.create({
-          userId: post.userId,
-          type: 'like',
-          isRead: false,
-          notifyData: {
-            postId: postId,
-            user: {
-              id: user.id,
-              username: user.username,
-              full_name: user.full_name,
-              profile_picture: user.profile_picture,
-            },
-          },
-        });
-        if (postUser?.socket_id) {
-          io.to(postUser.socket_id).emit('newLike');
-        }
-      } else {
-        await db.PostLike.update(reactionId, {
-          where: { userId, postId },
-        });
-      }
-    }
   }
 
   try {
+    const post = await db.Post.findOne({ where: { id: postId } });
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
     const existingLike = await db.PostLike.findOne({
       where: { userId, postId },
     });
 
-    if (existingLike && post && !reactionId) {
-      await existingLike.destroy();
-      await db.Post.decrement('likesCount', { where: { id: postId } });
+    if (existingLike) {
+      if (reactionId) {
+        // Update the reaction
+        await existingLike.update({ reactionId });
+        return res.status(200).json({
+          message: 'Reaction updated successfully',
+        });
+      } else {
+        // Unlike the post
+        await existingLike.destroy();
+        await db.Post.decrement('likesCount', { where: { id: postId } });
 
-      await db.MyNotification.destroy({
-        where: {
-          userId: post.userId,
-          type: 'like',
-          notifyData: {
-            postId,
-            user: {
-              id: userId,
+        await db.MyNotification.destroy({
+          where: {
+            userId: post.userId,
+            type: 'like',
+            notifyData: {
+              postId,
+              user: { id: userId },
             },
           },
-        },
-      });
+        });
 
-      return res.status(200).json({
-        message: 'post unliked successfully',
-      });
+        return res.status(200).json({
+          message: 'Post unliked successfully',
+        });
+      }
     } else {
-      const newLike = await db.PostLike.create({
-        userId,
-        postId,
-        reactionId,
-      });
+      if (reactionId) {
+        // Like the post with reaction
+        const newLike = await db.PostLike.create({
+          userId,
+          postId,
+          reactionId,
+        });
 
-      await db.Post.increment('likesCount', { where: { id: postId } });
+        const user = await db.User.findOne({
+          where: { id: userId },
+          attributes: [
+            'id',
+            'username',
+            'socket_id',
+            'full_name',
+            'profile_picture',
+          ],
+        });
 
-      return res.status(201).json({
-        message: 'post liked successfully',
-        like: newLike,
+        await db.Post.increment('likesCount', { where: { id: postId } });
+        if (user) {
+          await db.MyNotification.create({
+            userId: post.userId,
+            type: 'like',
+            isRead: false,
+            notifyData: {
+              postId,
+              user: {
+                id: user.id,
+                username: user.username,
+                full_name: user.full_name,
+                profile_picture: user.profile_picture,
+              },
+            },
+          });
+        }
+
+        return res.status(201).json({
+          message: 'Post liked successfully',
+          like: newLike,
+        });
+      }
+
+      return res.status(400).json({
+        message: 'Reaction ID is required for liking a post',
       });
     }
   } catch (error) {
-    console.error('error toggling post like', error);
+    console.error('Error toggling post like:', error);
     return res.status(500).json({
-      message: 'failed to toggle post like',
+      message: 'Failed to toggle post like',
     });
   }
 };
