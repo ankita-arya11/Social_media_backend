@@ -18,6 +18,12 @@ interface UserAttributes {
   posts?: number;
   otp: number | null;
   other_data: Record<string, any> | null;
+  role: 'admin' | 'user' | 'manager';
+  permissions: {
+    can_create_post: boolean;
+    can_create_event: boolean;
+    [key: string]: any;
+  };
 }
 
 interface UserCreationAttributes
@@ -37,6 +43,7 @@ interface UserCreationAttributes
     | 'posts'
     | 'otp'
     | 'other_data'
+    | 'role'
   > {}
 
 class User
@@ -59,6 +66,12 @@ class User
   public socket_id?: string;
   public otp!: number | null;
   public other_data!: Record<string, any> | null;
+  public permissions!: {
+    can_create_post: boolean;
+    can_create_event: boolean;
+    [key: string]: any;
+  };
+  public role!: 'admin' | 'user' | 'manager';
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -135,9 +148,23 @@ User.init(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    role: {
+      type: DataTypes.ENUM('admin', 'user', 'manager'),
+      allowNull: false,
+      defaultValue: 'user',
+    },
+    permissions: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: {
+        can_create_post: true,
+        can_create_event: false,
+      },
+    },
     other_data: {
       type: DataTypes.JSON,
       allowNull: true,
+      defaultValue: {},
     },
   },
   {

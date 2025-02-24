@@ -46,6 +46,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
         'posts',
         'createdAt',
         'updatedAt',
+        'role',
       ],
     });
 
@@ -88,6 +89,8 @@ export const getUserById = async (req: Request, res: Response) => {
         'followings',
         'posts',
         'updatedAt',
+        'role',
+        'permissions',
       ],
     });
 
@@ -138,6 +141,7 @@ export const searchUser = async (req: Request, res: Response) => {
         'friends',
         'followings',
         'posts',
+        'role',
       ],
     });
 
@@ -176,6 +180,7 @@ export const latestUsers = async (
         'email',
         'profile_picture',
         'createdAt',
+        'role',
       ],
     });
 
