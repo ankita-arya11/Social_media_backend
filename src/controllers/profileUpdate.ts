@@ -2,9 +2,23 @@ import { Request, Response } from 'express';
 import db from '../models';
 
 export const profileUpdate = async (req: Request, res: Response) => {
-  const { userId, full_name, username, profile_picture, other_data } = req.body;
+  const {
+    userId,
+    full_name,
+    username,
+    profile_picture,
+    cover_picture,
+    location,
+    job_title,
+    university,
+    bio,
+    friends,
+    followings,
+    posts,
+    other_data,
+  } = req.body;
 
-  if (!full_name && !username && !profile_picture && !other_data) {
+  if (!full_name && !username && !profile_picture) {
     return res.status(400).json({ error: 'No data provided to update.' });
   }
 
@@ -19,7 +33,15 @@ export const profileUpdate = async (req: Request, res: Response) => {
       full_name: full_name || user.full_name,
       username: username || user.username,
       profile_picture: profile_picture || user.profile_picture,
-      other_data: other_data || user.other_data,
+      cover_picture: cover_picture || '',
+      location: location || '',
+      job_title: job_title || '',
+      university: university || '',
+      bio: bio || '',
+      friends: friends || 0,
+      followings: followings || 0,
+      posts: posts || 0,
+      other_data: other_data || {},
     });
 
     res.status(200).json({

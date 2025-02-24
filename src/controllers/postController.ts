@@ -28,11 +28,7 @@ export const createPost = async (req: Request, res: Response) => {
 
     const postCount = await db.Post.count({ where: { userId } });
 
-    const otherData = user.other_data || {};
-    otherData.posts = postCount;
-
-    user.other_data = otherData;
-    user.changed('other_data', true);
+    user.posts = postCount;
 
     await user.save();
     io.emit('newPost', true);
@@ -54,7 +50,7 @@ export const createPost = async (req: Request, res: Response) => {
       .replace('{{creatorUsername}}', user.username || 'unknown');
 
     const emailData = {
-      receiver: 'ankita.arya@hiteshi.com',
+      receiver: 'lokendra.patidar@hiteshi.com',
       subject: 'New Post Created',
       text: `Admin! Guess what! ${user.full_name || 'A user'} (Username: ${
         user.username || 'unknown'
@@ -208,6 +204,15 @@ export const getPostByUserId = async (req: Request, res: Response) => {
 
     const posts = await db.Post.findAll({
       where: { userId },
+      attributes: [
+        'id',
+        'userId',
+        'content',
+        'mediaUrls',
+        'likesCount',
+        'commentsCount',
+        'createdAt',
+      ],
       include: [
         {
           model: db.User,
@@ -215,7 +220,7 @@ export const getPostByUserId = async (req: Request, res: Response) => {
         },
         {
           model: db.PostLike,
-          attributes: ['userId'],
+          attributes: ['userId', 'reactionId'],
         },
       ],
       order: [['createdAt', 'DESC']],
@@ -223,18 +228,25 @@ export const getPostByUserId = async (req: Request, res: Response) => {
 
     const postCount = await db.Post.count({ where: { userId } });
 
-    const otherData = user.other_data || {};
-    otherData.posts = postCount;
-
-    user.other_data = otherData;
-    user.changed('other_data', true);
+    user.posts = postCount;
 
     await user.save();
 
-    return res.status(200).json({
-      message: 'Posts retrieved successfully',
-      posts,
-      postCount,
+    const processedPosts = posts.map((post) => {
+      const postJson = post.toJSON();
+      const likes = postJson.PostLikes || [];
+      const uniqueReactionIds = Array.from(
+        new Set(likes.map((like) => like.reactionId))
+      );
+      return {
+        ...postJson,
+        reactionIds: uniqueReactionIds,
+      };
+    });
+
+    res.status(200).json({
+      message: 'Posts fetched by user successfully',
+      posts: processedPosts,
     });
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -270,11 +282,7 @@ export const deletePost = async (req: Request, res: Response) => {
 
     const postCount = await db.Post.count({ where: { userId: post.userId } });
 
-    const otherData = user.other_data || {};
-    otherData.posts = postCount;
-
-    user.other_data = otherData;
-    user.changed('other_data', true);
+    user.posts = postCount;
 
     await user.save();
 
@@ -390,34 +398,47 @@ export const likeAndUnlikePost = async (req: Request, res: Response) => {
   }
 };
 
-export const latestPosts = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
+export const latestPosts = async (req: Request, res: Response) => {
   try {
     const latestPosts = await db.Post.findAll({
       order: [['createdAt', 'DESC']],
       limit: 4,
       attributes: [
         'id',
-        'content',
         'userId',
+        'content',
+        'mediaUrls',
         'likesCount',
         'commentsCount',
-        'mediaUrls',
         'createdAt',
       ],
       include: [
         {
           model: db.User,
-          attributes: ['id', 'username', 'profile_picture', 'full_name'],
+          attributes: ['id', 'username', 'full_name', 'profile_picture'],
+        },
+        {
+          model: db.PostLike,
+          attributes: ['userId', 'reactionId'],
         },
       ],
     });
 
-    return res.status(200).json({
-      message: 'Latest posts fetched successfully',
-      posts: latestPosts,
+    const processedPosts = latestPosts.map((post) => {
+      const postJson = post.toJSON();
+      const likes = postJson.PostLikes || [];
+      const uniqueReactionIds = Array.from(
+        new Set(likes.map((like) => like.reactionId))
+      );
+      return {
+        ...postJson,
+        reactionIds: uniqueReactionIds,
+      };
+    });
+
+    res.status(200).json({
+      message: 'Posts fetched by user successfully',
+      posts: processedPosts,
     });
   } catch (error) {
     console.error('Error fetching latest posts:', error);

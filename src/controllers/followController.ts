@@ -417,15 +417,9 @@ const updateOtherData = async (
     throw new Error('User not found');
   }
 
-  const otherData = user.other_data || {};
-  const currentCount = otherData[field] || 0;
-
-  otherData[field] = increment
-    ? currentCount + 1
-    : Math.max(0, currentCount - 1);
-
-  user.other_data = otherData;
-  user.changed('other_data', true);
+  user[field] = increment
+    ? (user[field] || 0) + 1
+    : Math.max((user[field] || 0) - 1, 0);
 
   await user.save();
 };

@@ -36,6 +36,14 @@ export const getAllUsers = async (req: Request, res: Response) => {
         'full_name',
         'profile_picture',
         'other_data',
+        'cover_picture',
+        'location',
+        'job_title',
+        'university',
+        'bio',
+        'friends',
+        'followings',
+        'posts',
         'createdAt',
         'updatedAt',
       ],
@@ -71,6 +79,14 @@ export const getUserById = async (req: Request, res: Response) => {
         'profile_picture',
         'createdAt',
         'other_data',
+        'cover_picture',
+        'location',
+        'job_title',
+        'university',
+        'bio',
+        'friends',
+        'followings',
+        'posts',
         'updatedAt',
       ],
     });
@@ -114,6 +130,14 @@ export const searchUser = async (req: Request, res: Response) => {
         'full_name',
         'profile_picture',
         'other_data',
+        'cover_picture',
+        'location',
+        'job_title',
+        'university',
+        'bio',
+        'friends',
+        'followings',
+        'posts',
       ],
     });
 
@@ -125,12 +149,7 @@ export const searchUser = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      data: {
-        username: user.username,
-        full_name: user.full_name,
-        profile_picture: user.profile_picture,
-        other_data: user.other_data,
-      },
+      user,
     });
   } catch (error) {
     console.error('Error searching user by username:', error);
