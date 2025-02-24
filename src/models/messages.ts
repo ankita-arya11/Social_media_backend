@@ -7,6 +7,7 @@ interface MessagesAttributes {
   sender_id: number;
   receiver_id: number;
   message: string | null;
+  media: string | null;
   is_read: boolean | false;
 }
 
@@ -24,6 +25,7 @@ class Messages
   public sender_id!: number;
   public receiver_id!: number;
   public message!: string | null;
+  public media!: string | null;
   public is_read!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -51,6 +53,10 @@ Messages.init(
       },
     },
     message: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    media: {
       type: DataTypes.STRING,
       allowNull: true,
     },

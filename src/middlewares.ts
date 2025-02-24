@@ -1,4 +1,4 @@
-import express, { Application, NextFunction, Request, Response } from 'express';
+import express, { Application } from 'express';
 
 import morgan from 'morgan';
 import hpp from 'hpp';
