@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import { io } from '..';
 
 export const addFollowing = async (
   req: Request,
@@ -64,6 +65,45 @@ export const addFollowing = async (
 
     await updateOtherData(userIdNum, 'followings', true);
     await updateOtherData(followingIdNum, 'friends', true);
+
+    const follower = await db.User.findOne({
+      where: { id: userIdNum },
+      attributes: ['id', 'username', 'full_name', 'profile_picture'],
+    });
+
+    const followingUser = await db.User.findOne({
+      where: { id: followingIdNum },
+      attributes: ['id', 'socket_id'],
+    });
+
+    if (!followingUser) {
+      return res.status(404).json({ message: 'Following user not found' });
+    }
+
+    if (follower) {
+      await db.MyNotification.create({
+        userId: followingIdNum,
+        type: 'follow',
+        isRead: false,
+        notifyData: {
+          user: {
+            id: follower.id,
+            username: follower.username,
+            full_name: follower.full_name,
+            profile_picture: follower.profile_picture,
+          },
+        },
+      });
+
+      if (followingUser.socket_id) {
+        io.to(followingUser.socket_id).emit('newFollow', {
+          userId: follower.id,
+          username: follower.username,
+          full_name: follower.full_name,
+          profile_picture: follower.profile_picture,
+        });
+      }
+    }
 
     return res.status(200).json({
       message: 'User added to following list successfully',
@@ -377,15 +417,9 @@ const updateOtherData = async (
     throw new Error('User not found');
   }
 
-  const otherData = user.other_data || {};
-  const currentCount = otherData[field] || 0;
-
-  otherData[field] = increment
-    ? currentCount + 1
-    : Math.max(0, currentCount - 1);
-
-  user.other_data = otherData;
-  user.changed('other_data', true);
+  user[field] = increment
+    ? (user[field] || 0) + 1
+    : Math.max((user[field] || 0) - 1, 0);
 
   await user.save();
 };

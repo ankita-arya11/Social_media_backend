@@ -1,16 +1,19 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../db/db';
 import User from './user';
+import PostLike from './postLike';
 
 interface PostAttributes {
   id: number;
   userId: number;
   content: string;
   mediaUrls?: string[];
+  reactionIds?: number[];
   likesCount: number;
   commentsCount: number;
   createdAt?: Date;
   updatedAt?: Date;
+  PostLikes?: PostLike[];
 }
 
 interface PostCreationAttributes
@@ -32,6 +35,7 @@ class Post
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+  public readonly PostLikes?: PostLike[];
 }
 
 Post.init(

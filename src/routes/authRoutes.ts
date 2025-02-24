@@ -46,6 +46,11 @@ import {
   getEvents,
 } from '../controllers/eventController';
 import { deleteMessage, getMessages } from '../controllers/messageController';
+import {
+  getMyNotification,
+  isMyNotification,
+  isNewMessage,
+} from '../controllers/notificationController';
 
 const router = express.Router();
 
@@ -97,5 +102,8 @@ router.get(
   isUserConnected
 );
 router.delete('/delete-message/:messageId', authenticate, deleteMessage);
+router.get('/is-my-notification/:userId', authenticate, isMyNotification);
+router.get('/get-my-notification/:userId', authenticate, getMyNotification);
+router.get('/is-new-message/:userId', authenticate, isNewMessage);
 
 export default router;

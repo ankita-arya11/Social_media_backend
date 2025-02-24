@@ -27,27 +27,11 @@ export const handleSendOtp = async (req: Request, res: Response) => {
     }
 
     const recipientName = user?.full_name || 'User';
-    const organizationName = 'Socialize Hiteshi';
+    const organizationName = 'Socialize@Hiteshi';
 
     const emailData = {
       receiver: email,
       subject: 'Your OTP Code',
-      text: `
-        Hello ${recipientName},
-
-        We have received a request to verify your identity for ${organizationName}. Please use the OTP below to complete your action:
-
-        OTP: ${otp}
-
-        This OTP is valid for 10 minutes and can only be used once. If you did not request this, please ignore this email.
-
-        If you have any questions, feel free to contact our support team.
-
-        Best Regards,
-        ${organizationName}
-        [Your Contact Information]
-        [Your Website URL]
-      `,
       html: `
         <html>
           <body>
@@ -59,7 +43,8 @@ export const handleSendOtp = async (req: Request, res: Response) => {
             <p>This OTP is valid for 10 minutes and can only be used once. If you did not request this, please ignore this email.</p>
             <p>If you have any questions, feel free to contact our support team.</p>
             <br>
-            <p>Best Regards,<br>${organizationName}<br>[Your Contact Information]<br>[Your Website URL]</p>
+            <p>Best Regards,<br><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxFIGZTCDVxnV5EcAxwEik-tGmTdim5vyyAw&s" alt="Socialize Hiteshi Logo" style="width: 15px; height: auto; vertical-align: middle;">${organizationName}<br>
+             Crystal IT Park, 8th Floor<br>
           </body>
         </html>
       `,
@@ -110,16 +95,6 @@ export const handleOtpVerification = async (req: Request, res: Response) => {
       user.username = username || user.username;
       user.full_name = full_name || user.full_name;
       user.profile_picture = null;
-      user.other_data = {
-        cover_picture: '',
-        location: '',
-        job_title: '',
-        university: '',
-        bio: '',
-        friends: 0,
-        following: 0,
-        posts: 0,
-      };
 
       await db.FollowerList.create({
         userId: user.id,

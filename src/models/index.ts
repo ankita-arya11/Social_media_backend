@@ -8,6 +8,8 @@ import FollowerList from './followerList';
 import Event from './event';
 import { setupAssociations } from './association';
 import Messages from './messages';
+import EventNotification from './eventNotification';
+import MyNotification from './myNotification';
 
 setupAssociations();
 
@@ -21,6 +23,8 @@ const db = {
   FollowerList,
   Event,
   Messages,
+  EventNotification,
+  MyNotification,
 };
 
 export default db;

@@ -53,11 +53,13 @@ export const handleSocketConnection = (io: Server) => {
         const sender_id = parseData.sender_id;
         const receiver_id = parseData.receiver_id;
         const message = parseData.message;
+        const media = parseData.media;
 
         await db.Messages.create({
           sender_id: sender_id,
           receiver_id: receiver_id,
           message: message,
+          media: media,
           is_read: false,
         });
 
@@ -78,6 +80,7 @@ export const handleSocketConnection = (io: Server) => {
           io.to(receiver.socket_id).emit('receiveMessage', {
             sender_id,
             message,
+            media,
             receiver_id,
             senderInfo,
             timestamp: new Date(),

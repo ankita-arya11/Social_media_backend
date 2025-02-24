@@ -7,6 +7,7 @@ class PostLike extends Model {
   public id!: number;
   public postId!: number;
   public userId!: number;
+  public reactionId!: number;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -36,6 +37,11 @@ PostLike.init(
         key: 'id',
       },
       onDelete: 'CASCADE',
+    },
+    reactionId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     },
   },
   {

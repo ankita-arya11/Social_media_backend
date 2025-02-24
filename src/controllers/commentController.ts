@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import { io } from '../index';
 
 export const createComment = async (req: Request, res: Response) => {
   const { userId, postId, comment } = req.body;
@@ -19,6 +20,51 @@ export const createComment = async (req: Request, res: Response) => {
     });
 
     await db.Post.increment('commentsCount', { where: { id: postId } });
+
+    const post = await db.Post.findByPk(postId, {
+      attributes: ['userId'],
+    });
+
+    if (post) {
+      const commenter = await db.User.findByPk(userId, {
+        attributes: ['id', 'username', 'full_name', 'profile_picture'],
+      });
+
+      const postUser = await db.User.findOne({
+        where: { id: userId },
+        attributes: [
+          'username',
+          'full_name',
+          'socket_id',
+          'id',
+          'profile_picture',
+        ],
+      });
+
+      if (commenter) {
+        await db.MyNotification.create({
+          userId: post.userId,
+          type: 'comment',
+          isRead: false,
+          notifyData: {
+            postId: postId,
+            comment: {
+              id: newComment.id,
+              text: comment,
+            },
+            user: {
+              id: commenter.id,
+              username: commenter.username,
+              full_name: commenter.full_name,
+              profile_picture: commenter.profile_picture,
+            },
+          },
+        });
+        if (postUser?.socket_id) {
+          io.to(postUser.socket_id).emit('newComment');
+        }
+      }
+    }
 
     return res.status(201).json({
       message: 'Comment created successfully',

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../models';
+import { Sequelize } from 'sequelize';
 
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
@@ -35,6 +36,14 @@ export const getAllUsers = async (req: Request, res: Response) => {
         'full_name',
         'profile_picture',
         'other_data',
+        'cover_picture',
+        'location',
+        'job_title',
+        'university',
+        'bio',
+        'friends',
+        'followings',
+        'posts',
         'createdAt',
         'updatedAt',
       ],
@@ -70,6 +79,14 @@ export const getUserById = async (req: Request, res: Response) => {
         'profile_picture',
         'createdAt',
         'other_data',
+        'cover_picture',
+        'location',
+        'job_title',
+        'university',
+        'bio',
+        'friends',
+        'followings',
+        'posts',
         'updatedAt',
       ],
     });
@@ -113,6 +130,14 @@ export const searchUser = async (req: Request, res: Response) => {
         'full_name',
         'profile_picture',
         'other_data',
+        'cover_picture',
+        'location',
+        'job_title',
+        'university',
+        'bio',
+        'friends',
+        'followings',
+        'posts',
       ],
     });
 
@@ -124,12 +149,7 @@ export const searchUser = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      data: {
-        username: user.username,
-        full_name: user.full_name,
-        profile_picture: user.profile_picture,
-        other_data: user.other_data,
-      },
+      user,
     });
   } catch (error) {
     console.error('Error searching user by username:', error);
@@ -149,7 +169,14 @@ export const latestUsers = async (
     const latestUsers = await db.User.findAll({
       order: [['createdAt', 'DESC']],
       limit: 5,
-      attributes: ['id', 'username', 'full_name', 'email', 'createdAt'],
+      attributes: [
+        'id',
+        'username',
+        'full_name',
+        'email',
+        'profile_picture',
+        'createdAt',
+      ],
     });
 
     return res.status(200).json({
@@ -196,9 +223,35 @@ export const getConnectedUser = async (
       attributes: ['id', 'full_name', 'username', 'profile_picture'],
     });
 
+    const unreadCounts = await db.Messages.findAll({
+      where: {
+        sender_id: connectedUserIds,
+        receiver_id: userId,
+        is_read: false,
+      },
+      attributes: ['sender_id', [Sequelize.fn('COUNT', '*'), 'unreadCount']],
+      group: ['sender_id'],
+    });
+
+    const unreadCountMap: Record<number, number> = {};
+    unreadCounts.forEach((count: any) => {
+      unreadCountMap[count.sender_id] = parseInt(
+        count.dataValues.unreadCount,
+        10
+      );
+    });
+
+    const connectedUsersWithCounts = connectedUsers.map((user) => ({
+      id: user.id,
+      full_name: user.full_name,
+      username: user.username,
+      profile_picture: user.profile_picture,
+      unreadCount: unreadCountMap[user.id] || 0,
+    }));
+
     return res.status(200).json({
-      message: 'Connected users fetched successfully',
-      users: connectedUsers,
+      message: 'Connected users with message counts fetched successfully',
+      users: connectedUsersWithCounts,
     });
   } catch (error) {
     console.error('Error fetching connected users:', error);

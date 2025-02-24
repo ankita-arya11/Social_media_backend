@@ -6,10 +6,10 @@ import { io } from '../index';
 export const createPost = async (req: Request, res: Response) => {
   const { userId, content, mediaUrls } = req.body;
 
-  if (!userId || !content || !mediaUrls) {
+  if (!userId || !mediaUrls) {
     return res
       .status(400)
-      .json({ message: 'User ID, content, and media URL are required' });
+      .json({ message: 'User ID, and media URL are required' });
   }
 
   try {
@@ -28,11 +28,7 @@ export const createPost = async (req: Request, res: Response) => {
 
     const postCount = await db.Post.count({ where: { userId } });
 
-    const otherData = user.other_data || {};
-    otherData.posts = postCount;
-
-    user.other_data = otherData;
-    user.changed('other_data', true);
+    user.posts = postCount;
 
     await user.save();
     io.emit('newPost', true);
@@ -54,7 +50,7 @@ export const createPost = async (req: Request, res: Response) => {
       .replace('{{creatorUsername}}', user.username || 'unknown');
 
     const emailData = {
-      receiver: 'ankita.arya@hiteshi.com',
+      receiver: 'lokendra.patidar@hiteshi.com',
       subject: 'New Post Created',
       text: `Admin! Guess what! ${user.full_name || 'A user'} (Username: ${
         user.username || 'unknown'
@@ -103,6 +99,10 @@ export const getPost = async (req: Request, res: Response) => {
           model: db.User,
           attributes: ['id', 'username', 'full_name', 'profile_picture'],
         },
+        {
+          model: db.PostLike,
+          attributes: ['userId', 'reactionId'],
+        },
       ],
     });
 
@@ -110,9 +110,18 @@ export const getPost = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
+    const postJson = post.toJSON();
+    const likes = postJson.PostLikes || [];
+    const uniqueReactionIds = Array.from(
+      new Set(likes.map((like) => like.reactionId))
+    );
+
     res.status(200).json({
       message: 'Post fetched successfully',
-      post,
+      post: {
+        ...postJson,
+        reactionIds: uniqueReactionIds,
+      },
     });
   } catch (error) {
     console.error('Error fetching post:', error);
@@ -148,15 +157,27 @@ export const getAllPost = async (req: Request, res: Response) => {
         },
         {
           model: db.PostLike,
-          attributes: ['userId'],
+          attributes: ['userId', 'reactionId'],
         },
       ],
       order: [['createdAt', 'DESC']],
     });
 
+    const processedPosts = posts.map((post) => {
+      const postJson = post.toJSON();
+      const likes = postJson.PostLikes || [];
+      const uniqueReactionIds = Array.from(
+        new Set(likes.map((like) => like.reactionId))
+      );
+      return {
+        ...postJson,
+        reactionIds: uniqueReactionIds,
+      };
+    });
+
     res.status(200).json({
       message: 'Posts fetched successfully',
-      posts,
+      posts: processedPosts,
     });
   } catch (error) {
     console.error('Error fetching post:', error);
@@ -183,6 +204,15 @@ export const getPostByUserId = async (req: Request, res: Response) => {
 
     const posts = await db.Post.findAll({
       where: { userId },
+      attributes: [
+        'id',
+        'userId',
+        'content',
+        'mediaUrls',
+        'likesCount',
+        'commentsCount',
+        'createdAt',
+      ],
       include: [
         {
           model: db.User,
@@ -190,7 +220,7 @@ export const getPostByUserId = async (req: Request, res: Response) => {
         },
         {
           model: db.PostLike,
-          attributes: ['userId'],
+          attributes: ['userId', 'reactionId'],
         },
       ],
       order: [['createdAt', 'DESC']],
@@ -198,18 +228,25 @@ export const getPostByUserId = async (req: Request, res: Response) => {
 
     const postCount = await db.Post.count({ where: { userId } });
 
-    const otherData = user.other_data || {};
-    otherData.posts = postCount;
-
-    user.other_data = otherData;
-    user.changed('other_data', true);
+    user.posts = postCount;
 
     await user.save();
 
-    return res.status(200).json({
-      message: 'Posts retrieved successfully',
-      posts,
-      postCount,
+    const processedPosts = posts.map((post) => {
+      const postJson = post.toJSON();
+      const likes = postJson.PostLikes || [];
+      const uniqueReactionIds = Array.from(
+        new Set(likes.map((like) => like.reactionId))
+      );
+      return {
+        ...postJson,
+        reactionIds: uniqueReactionIds,
+      };
+    });
+
+    res.status(200).json({
+      message: 'Posts fetched by user successfully',
+      posts: processedPosts,
     });
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -245,11 +282,7 @@ export const deletePost = async (req: Request, res: Response) => {
 
     const postCount = await db.Post.count({ where: { userId: post.userId } });
 
-    const otherData = user.other_data || {};
-    otherData.posts = postCount;
-
-    user.other_data = otherData;
-    user.changed('other_data', true);
+    user.posts = postCount;
 
     await user.save();
 
@@ -264,74 +297,148 @@ export const deletePost = async (req: Request, res: Response) => {
 };
 
 export const likeAndUnlikePost = async (req: Request, res: Response) => {
-  const { userId, postId } = req.body;
+  const { userId, postId, reactionId } = req.body;
 
   if (!userId || !postId) {
     return res.status(400).json({
-      message: 'user id and post id are required',
+      message: 'User ID and Post ID are required',
     });
   }
 
   try {
+    const post = await db.Post.findOne({ where: { id: postId } });
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
     const existingLike = await db.PostLike.findOne({
       where: { userId, postId },
     });
 
     if (existingLike) {
-      await existingLike.destroy();
-      await db.Post.decrement('likesCount', { where: { id: postId } });
+      if (reactionId) {
+        // Update the reaction
+        await existingLike.update({ reactionId });
+        return res.status(200).json({
+          message: 'Reaction updated successfully',
+        });
+      } else {
+        // Unlike the post
+        await existingLike.destroy();
+        await db.Post.decrement('likesCount', { where: { id: postId } });
 
-      return res.status(200).json({
-        message: 'post unliked successfully',
-      });
+        await db.MyNotification.destroy({
+          where: {
+            userId: post.userId,
+            type: 'like',
+            notifyData: {
+              postId,
+              user: { id: userId },
+            },
+          },
+        });
+
+        return res.status(200).json({
+          message: 'Post unliked successfully',
+        });
+      }
     } else {
-      const newLike = await db.PostLike.create({
-        userId,
-        postId,
-      });
+      if (reactionId) {
+        // Like the post with reaction
+        const newLike = await db.PostLike.create({
+          userId,
+          postId,
+          reactionId,
+        });
 
-      await db.Post.increment('likesCount', { where: { id: postId } });
-      return res.status(201).json({
-        message: 'post liked successfully',
-        like: newLike,
+        const user = await db.User.findOne({
+          where: { id: userId },
+          attributes: [
+            'id',
+            'username',
+            'socket_id',
+            'full_name',
+            'profile_picture',
+          ],
+        });
+
+        await db.Post.increment('likesCount', { where: { id: postId } });
+        if (user) {
+          await db.MyNotification.create({
+            userId: post.userId,
+            type: 'like',
+            isRead: false,
+            notifyData: {
+              postId,
+              user: {
+                id: user.id,
+                username: user.username,
+                full_name: user.full_name,
+                profile_picture: user.profile_picture,
+              },
+            },
+          });
+        }
+
+        return res.status(201).json({
+          message: 'Post liked successfully',
+          like: newLike,
+        });
+      }
+
+      return res.status(400).json({
+        message: 'Reaction ID is required for liking a post',
       });
     }
   } catch (error) {
-    console.error('error toggling post like', error);
+    console.error('Error toggling post like:', error);
     return res.status(500).json({
-      message: 'failed to toggle post like',
+      message: 'Failed to toggle post like',
     });
   }
 };
 
-export const latestPosts = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
+export const latestPosts = async (req: Request, res: Response) => {
   try {
     const latestPosts = await db.Post.findAll({
       order: [['createdAt', 'DESC']],
       limit: 4,
       attributes: [
         'id',
-        'content',
         'userId',
+        'content',
+        'mediaUrls',
         'likesCount',
         'commentsCount',
-        'mediaUrls',
         'createdAt',
       ],
       include: [
         {
           model: db.User,
-          attributes: ['id', 'username', 'full_name'],
+          attributes: ['id', 'username', 'full_name', 'profile_picture'],
+        },
+        {
+          model: db.PostLike,
+          attributes: ['userId', 'reactionId'],
         },
       ],
     });
 
-    return res.status(200).json({
-      message: 'Latest posts fetched successfully',
-      posts: latestPosts,
+    const processedPosts = latestPosts.map((post) => {
+      const postJson = post.toJSON();
+      const likes = postJson.PostLikes || [];
+      const uniqueReactionIds = Array.from(
+        new Set(likes.map((like) => like.reactionId))
+      );
+      return {
+        ...postJson,
+        reactionIds: uniqueReactionIds,
+      };
+    });
+
+    res.status(200).json({
+      message: 'Posts fetched by user successfully',
+      posts: processedPosts,
     });
   } catch (error) {
     console.error('Error fetching latest posts:', error);
