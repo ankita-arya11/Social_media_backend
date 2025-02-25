@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import db from '../models';
 
 export const isMyNotification = async (req: Request, res: Response) => {
-  const { userId } = req.params;
+  const userId = (req as any)?.user?.id;
 
   if (!userId) {
     return res.status(400).json({ message: 'UserId is required' });
@@ -29,7 +29,7 @@ export const isMyNotification = async (req: Request, res: Response) => {
 };
 
 export const getMyNotification = async (req: Request, res: Response) => {
-  const { userId } = req.params;
+  const userId = (req as any)?.user?.id;
 
   if (!userId) {
     return res.status(400).json({ message: 'UserId is required' });
@@ -65,8 +65,7 @@ export const getMyNotification = async (req: Request, res: Response) => {
 };
 
 export const isNewMessage = async (req: Request, res: Response) => {
-  const { userId } = req.params;
-
+  const userId = (req as any)?.user?.id;
   if (!userId) {
     return res.status(400).json({ message: 'UserId is required' });
   }
