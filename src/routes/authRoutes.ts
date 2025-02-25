@@ -76,12 +76,12 @@ router.post('/profile-update', authenticate, profileUpdate);
 router.delete('/delete-comment/:commentId', authenticate, deleteComment);
 router.get('/get-user-by-id/:id', authenticate, getUserById);
 router.get('/get-all-users', authenticate, getAllUsers);
-router.post('/add-following/:userId', authenticate, addFollowing);
+router.post('/add-following', authenticate, addFollowing);
 router.get('/latest-users', authenticate, latestUsers);
 router.get('/get-followings/:userId', authenticate, getFollowings);
 router.get('/get-followers/:userId', authenticate, getFollowers);
-router.post('/remove-following/:userId', authenticate, removeFollowing);
-router.post('/remove-follower/:userId', authenticate, removeFollower);
+router.post('/remove-following', authenticate, removeFollowing);
+// router.post('/remove-follower', authenticate, removeFollower);
 router.get('/search-user/:username', authenticate, searchUser);
 router.get('/latest-posts', authenticate, latestPosts);
 router.get('/search/:query', authenticate, searchQuery);
@@ -102,8 +102,8 @@ router.get(
   isUserConnected
 );
 router.delete('/delete-message/:messageId', authenticate, deleteMessage);
-router.get('/is-my-notification/:userId', authenticate, isMyNotification);
-router.get('/get-my-notification/:userId', authenticate, getMyNotification);
-router.get('/is-new-message/:userId', authenticate, isNewMessage);
+router.get('/is-my-notification', authenticate, isMyNotification);
+router.get('/get-my-notification', authenticate, getMyNotification);
+router.get('/is-new-message', authenticate, isNewMessage);
 
 export default router;

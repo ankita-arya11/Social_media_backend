@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../helpers/jwt';
+import db from '../models';
 
-export const authenticate = (
+export const authenticate = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void | Response => {
+): Promise<Response | void> => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
@@ -14,7 +15,16 @@ export const authenticate = (
 
   try {
     const decoded = verifyToken(token);
-    (req as any).user = decoded;
+    const user = await db.User.findOne({
+      where: {
+        email: decoded?.email,
+      },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    (req as any).user = user;
     next();
   } catch (error) {
     return res.status(401).json({ error: 'Invalid or expired token' });

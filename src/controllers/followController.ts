@@ -8,15 +8,20 @@ export const addFollowing = async (
 ): Promise<Response> => {
   try {
     const { followingId } = req.body;
-    const { userId } = req.params;
+    const currentUser = (req as any).user;
+    if (!currentUser) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-    if (!userId || !followingId) {
+    const currentUserId = currentUser.id;
+
+    if (!currentUserId || !followingId) {
       return res
         .status(400)
         .json({ message: 'userId and followingId are required' });
     }
 
-    const userIdNum = parseInt(userId, 10);
+    const userIdNum = parseInt(currentUserId, 10);
     const followingIdNum = parseInt(followingId, 10);
 
     if (isNaN(userIdNum) || isNaN(followingIdNum)) {
@@ -105,9 +110,36 @@ export const addFollowing = async (
       }
     }
 
+    const updatedFollowingList = await db.FollowingList.findOne({
+      where: { userId: userIdNum },
+    });
+    const updatedFollowerList = await db.FollowerList.findOne({
+      where: { userId: userIdNum },
+    });
+
+    const updatedFollowings = updatedFollowingList
+      ? updatedFollowingList.following
+      : [];
+    const updatedFollowers = updatedFollowerList
+      ? updatedFollowerList.followers
+      : [];
+
+    let follow_status = 'none';
+    if (
+      updatedFollowings.includes(followingIdNum) &&
+      updatedFollowers.includes(followingIdNum)
+    ) {
+      follow_status = 'followed';
+    } else if (updatedFollowings.includes(followingIdNum)) {
+      follow_status = 'requested';
+    } else if (updatedFollowers.includes(followingIdNum)) {
+      follow_status = 'follow_back';
+    }
+
     return res.status(200).json({
       message: 'User added to following list successfully',
       followingList,
+      follow_status,
     });
   } catch (error) {
     console.error('Error adding following:', error);
@@ -118,94 +150,89 @@ export const addFollowing = async (
   }
 };
 
-export const addFollower = async (req: Request, res: Response) => {
-  try {
-    const { followerId } = req.body;
-    const { userId } = req.params;
-
-    const userIdNum = Number(userId);
-
-    if (!userId || !followerId) {
-      return res
-        .status(400)
-        .json({ message: 'userId and followerId are required' });
-    }
-
-    const usersExist = await db.User.findAll({
-      where: { id: [userId, followerId] },
-    });
-
-    if (usersExist.length !== 2) {
-      return res
-        .status(404)
-        .json({ message: 'One or more users do not exist' });
-    }
-
-    const followerList = await db.FollowerList.findOne({
-      where: { userId },
-    });
-
-    if (!followerList) {
-      return res.status(404).json({ message: 'Follower list not found' });
-    }
-
-    const currentFollowers = followerList.followers || [];
-    if (currentFollowers.includes(followerId)) {
-      return res.status(400).json({ message: 'User is already a follower' });
-    }
-
-    const updatedFollowers = [...currentFollowers, followerId];
-    followerList.followers = updatedFollowers;
-
-    await followerList.save();
-
-    await updateOtherData(userIdNum, 'friends', true);
-
-    return res.status(200).json({
-      message: 'Follower added successfully',
-      followerList,
-    });
-  } catch (error) {
-    console.error('Error adding follower:', error);
-    return res.status(500).json({
-      message: 'Failed to add follower',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
-};
-
 export const getFollowings = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
   try {
-    const { userId } = req.params;
+    const currentUserId = req?.user?.id;
+
+    const userId = req?.params?.userId;
 
     const userIdNum = parseInt(userId, 10);
-
     if (isNaN(userIdNum)) {
-      return res.status(400).json({ message: 'userId must be a valid number' });
+      return res
+        .status(400)
+        .json({ message: 'User ID must be a valid number' });
     }
 
     const followingList = await db.FollowingList.findOne({
       where: { userId: userIdNum },
     });
-
     if (!followingList) {
       return res.status(404).json({ message: 'Following list not found' });
     }
 
     const followingUserIds = followingList.following;
+    if (followingUserIds.length === 0) {
+      return res
+        .status(200)
+        .json({ message: 'No followings found', following: [] });
+    }
+    const currentUserFollowingList = await db.FollowingList.findOne({
+      where: { userId: currentUserId },
+    });
+    const currentUserFollowerList = await db.FollowerList.findOne({
+      where: { userId: currentUserId },
+    });
+
+    const currentUserFollowingIds = currentUserFollowingList
+      ? currentUserFollowingList.following
+      : [];
+    const currentUserFollowerIds = currentUserFollowerList
+      ? currentUserFollowerList.followers
+      : [];
 
     const followingUsers = await db.User.findAll({
-      where: {
-        id: followingUserIds,
-      },
+      where: { id: followingUserIds },
+      attributes: [
+        'id',
+        'username',
+        'full_name',
+        'profile_picture',
+        'other_data',
+        'cover_picture',
+        'location',
+        'job_title',
+        'university',
+        'bio',
+        'friends',
+        'followings',
+        'posts',
+        'createdAt',
+        'updatedAt',
+        'role',
+      ],
+    });
+
+    const updatedFollowings = followingUsers.map((user: any) => {
+      let follow_status = 'none';
+      if (
+        currentUserFollowingIds.includes(user.id) &&
+        currentUserFollowerIds.includes(user.id)
+      ) {
+        follow_status = 'followed';
+      } else if (currentUserFollowingIds.includes(user.id)) {
+        follow_status = 'requested';
+      } else if (currentUserFollowerIds.includes(user.id)) {
+        follow_status = 'follow_back';
+      }
+      return { ...user.toJSON(), follow_status };
     });
 
     return res.status(200).json({
       message: 'Following list fetched successfully',
-      following: followingUsers,
+      following: updatedFollowings,
     });
   } catch (error) {
     console.error('Error fetching following list:', error);
@@ -221,33 +248,84 @@ export const getFollowers = async (
   res: Response
 ): Promise<Response> => {
   try {
+    const currentUserId = req?.user?.id;
     const { userId } = req.params;
-
     const userIdNum = parseInt(userId, 10);
 
     if (isNaN(userIdNum)) {
-      return res.status(400).json({ message: 'userId must be a valid number' });
+      return res
+        .status(400)
+        .json({ message: 'User ID must be a valid number' });
     }
 
     const followerList = await db.FollowerList.findOne({
       where: { userId: userIdNum },
     });
-
     if (!followerList) {
       return res.status(404).json({ message: 'Follower list not found' });
     }
 
     const followerUserIds = followerList.followers;
+    if (followerUserIds.length === 0) {
+      return res
+        .status(200)
+        .json({ message: 'No followers found', followers: [] });
+    }
+
+    const currentUserFollowingList = await db.FollowingList.findOne({
+      where: { userId: currentUserId },
+    });
+    const currentUserFollowerList = await db.FollowerList.findOne({
+      where: { userId: currentUserId },
+    });
+
+    const currentUserFollowingIds = currentUserFollowingList
+      ? currentUserFollowingList.following
+      : [];
+    const currentUserFollowerIds = currentUserFollowerList
+      ? currentUserFollowerList.followers
+      : [];
 
     const followers = await db.User.findAll({
-      where: {
-        id: followerUserIds,
-      },
+      where: { id: followerUserIds },
+      attributes: [
+        'id',
+        'username',
+        'full_name',
+        'profile_picture',
+        'other_data',
+        'cover_picture',
+        'location',
+        'job_title',
+        'university',
+        'bio',
+        'friends',
+        'followings',
+        'posts',
+        'createdAt',
+        'updatedAt',
+        'role',
+      ],
+    });
+
+    const updatedFollowers = followers.map((user: any) => {
+      let follow_status = 'none';
+      if (
+        currentUserFollowingIds.includes(user.id) &&
+        currentUserFollowerIds.includes(user.id)
+      ) {
+        follow_status = 'followed';
+      } else if (currentUserFollowingIds.includes(user.id)) {
+        follow_status = 'requested';
+      } else if (currentUserFollowerIds.includes(user.id)) {
+        follow_status = 'follow_back';
+      }
+      return { ...user.toJSON(), follow_status };
     });
 
     return res.status(200).json({
       message: 'Followers list fetched successfully',
-      followers,
+      followers: updatedFollowers,
     });
   } catch (error) {
     console.error('Error fetching followers list:', error);
@@ -264,9 +342,14 @@ export const removeFollowing = async (
 ): Promise<Response> => {
   try {
     const { followingId } = req.body;
-    const { userId } = req.params;
+    const currentUser = (req as any).user;
+    if (!currentUser) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-    const userIdNum = parseInt(userId, 10);
+    const currentUserId = currentUser.id;
+
+    const userIdNum = parseInt(currentUserId, 10);
     const followingIdNum = parseInt(followingId, 10);
 
     if (isNaN(userIdNum) || isNaN(followingIdNum)) {
@@ -314,9 +397,36 @@ export const removeFollowing = async (
     await updateOtherData(userIdNum, 'followings', false);
     await updateOtherData(followingIdNum, 'friends', false);
 
+    const updatedFollowingList = await db.FollowingList.findOne({
+      where: { userId: userIdNum },
+    });
+    const updatedFollowerList = await db.FollowerList.findOne({
+      where: { userId: userIdNum },
+    });
+
+    const updatedFollowings = updatedFollowingList
+      ? updatedFollowingList.following
+      : [];
+    const updatedFollowers = updatedFollowerList
+      ? updatedFollowerList.followers
+      : [];
+
+    let follow_status = 'none';
+    if (
+      updatedFollowings.includes(followingIdNum) &&
+      updatedFollowers.includes(followingIdNum)
+    ) {
+      follow_status = 'followed';
+    } else if (updatedFollowings.includes(followingIdNum)) {
+      follow_status = 'requested';
+    } else if (updatedFollowers.includes(followingIdNum)) {
+      follow_status = 'follow_back';
+    }
+
     return res.status(200).json({
       message: 'User removed from following list successfully',
       followingList,
+      follow_status,
     });
   } catch (error) {
     console.error('Error removing following:', error);
@@ -401,6 +511,62 @@ export const removeFollower = async (
     console.error('Error removing follower:', error);
     return res.status(500).json({
       message: 'Failed to remove follower',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+export const addFollower = async (req: Request, res: Response) => {
+  try {
+    const { followerId } = req.body;
+    const { userId } = req.params;
+
+    const userIdNum = Number(userId);
+
+    if (!userId || !followerId) {
+      return res
+        .status(400)
+        .json({ message: 'userId and followerId are required' });
+    }
+
+    const usersExist = await db.User.findAll({
+      where: { id: [userId, followerId] },
+    });
+
+    if (usersExist.length !== 2) {
+      return res
+        .status(404)
+        .json({ message: 'One or more users do not exist' });
+    }
+
+    const followerList = await db.FollowerList.findOne({
+      where: { userId },
+    });
+
+    if (!followerList) {
+      return res.status(404).json({ message: 'Follower list not found' });
+    }
+
+    const currentFollowers = followerList.followers || [];
+    if (currentFollowers.includes(followerId)) {
+      return res.status(400).json({ message: 'User is already a follower' });
+    }
+
+    const updatedFollowers = [...currentFollowers, followerId];
+    followerList.followers = updatedFollowers;
+
+    await followerList.save();
+
+    await updateOtherData(userIdNum, 'friends', true);
+
+    return res.status(200).json({
+      message: 'Follower added successfully',
+      followerList,
+    });
+  } catch (error) {
+    console.error('Error adding follower:', error);
+    return res.status(500).json({
+      message: 'Failed to add follower',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }

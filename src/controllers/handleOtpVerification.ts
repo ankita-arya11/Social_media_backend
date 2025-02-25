@@ -23,6 +23,10 @@ export const handleSendOtp = async (req: Request, res: Response) => {
       await db.User.create({
         email,
         otp,
+        permissions: {
+          can_create_post: false,
+          can_create_event: false,
+        },
       });
     }
 
@@ -53,7 +57,7 @@ export const handleSendOtp = async (req: Request, res: Response) => {
     const isEmailSent = await sendEmail(emailData);
 
     if (!isEmailSent) {
-      return res.status(500).send({ message: 'Failed to send OTP email' });
+      return res.status(500).send({ message: 'Failed to send OTP on email' });
     }
 
     res.status(200).send({

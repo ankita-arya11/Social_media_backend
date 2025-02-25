@@ -1,12 +1,10 @@
 import { Request, Response } from 'express';
 import db from '../models';
-import { Sequelize } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
-    const userEmail = (req as any).user?.email;
-    const user = await db.User.findOne({ where: { email: userEmail } });
-
+    const user = (req as any).user;
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -23,13 +21,37 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : null;
-    const offset = req.query.limit
+    const currentUser = (req as any).user;
+    if (!currentUser) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const currentUserId = currentUser.id;
+
+    const followerList = await db.FollowerList.findOne({
+      where: { userId: currentUserId },
+    });
+
+    const followingList = await db.FollowingList.findOne({
+      where: { userId: currentUserId },
+    });
+
+    const followers = followerList ? followerList.followers : [];
+    const followings = followingList ? followingList.following : [];
+
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string)
+      : undefined;
+    const offset = req.query.offset
       ? parseInt(req.query.offset as string)
-      : null;
+      : undefined;
+
     const users = await db.User.findAll({
-      ...(limit ? { limit } : {}),
-      ...(offset ? { offset } : {}),
+      where: {
+        id: { [Op.ne]: currentUserId },
+      },
+      limit,
+      offset,
       attributes: [
         'id',
         'username',
@@ -46,12 +68,25 @@ export const getAllUsers = async (req: Request, res: Response) => {
         'posts',
         'createdAt',
         'updatedAt',
+        'role',
       ],
+    });
+
+    const usersWithFollowStatus = users.map((user) => {
+      const isFollowing = followings.includes(user.id);
+      const isFollower = followers.includes(user.id);
+
+      let follow_status = 'none';
+      if (isFollowing && isFollower) follow_status = 'followed';
+      else if (isFollowing) follow_status = 'requested';
+      else if (isFollower) follow_status = 'follow_back';
+
+      return { ...user.toJSON(), follow_status };
     });
 
     res.status(200).json({
       message: 'Users fetched successfully',
-      users,
+      users: usersWithFollowStatus,
     });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -64,7 +99,13 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
 export const getUserById = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.id as string, 10);
+    const currentUser = (req as any)?.user;
+    if (!currentUser) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const currentUserId = currentUser?.id;
+    const userId = parseInt(req?.params?.id as string, 10);
 
     if (isNaN(userId)) {
       return res.status(400).json({ message: 'Invalid User ID' });
@@ -88,6 +129,8 @@ export const getUserById = async (req: Request, res: Response) => {
         'followings',
         'posts',
         'updatedAt',
+        'role',
+        'permissions',
       ],
     });
 
@@ -95,9 +138,27 @@ export const getUserById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const followerList = await db.FollowerList.findOne({
+      where: { userId: currentUserId },
+    });
+    const followingList = await db.FollowingList.findOne({
+      where: { userId: currentUserId },
+    });
+
+    const followers = followerList ? followerList.followers : [];
+    const followings = followingList ? followingList.following : [];
+
+    const isFollowing = followings.includes(userId);
+    const isFollower = followers.includes(userId);
+
+    let follow_status = 'none';
+    if (isFollowing && isFollower) follow_status = 'followed';
+    else if (isFollowing) follow_status = 'requested';
+    else if (isFollower) follow_status = 'follow_back';
+
     res.status(200).json({
       message: 'User fetched successfully',
-      user,
+      user: { ...user.toJSON(), follow_status },
     });
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -138,6 +199,7 @@ export const searchUser = async (req: Request, res: Response) => {
         'friends',
         'followings',
         'posts',
+        'role',
       ],
     });
 
@@ -176,6 +238,7 @@ export const latestUsers = async (
         'email',
         'profile_picture',
         'createdAt',
+        'role',
       ],
     });
 
