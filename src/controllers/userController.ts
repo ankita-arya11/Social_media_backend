@@ -78,7 +78,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
       let follow_status = 'none';
       if (isFollowing && isFollower) follow_status = 'followed';
-      else if (isFollowing) follow_status = 'pending';
+      else if (isFollowing) follow_status = 'requested';
       else if (isFollower) follow_status = 'follow_back';
 
       return { ...user.toJSON(), follow_status };
@@ -109,12 +109,6 @@ export const getUserById = async (req: Request, res: Response) => {
 
     if (isNaN(userId)) {
       return res.status(400).json({ message: 'Invalid User ID' });
-    }
-
-    if (userId === currentUserId) {
-      return res
-        .status(400)
-        .json({ message: 'Cannot fetch your own profile with this endpoint' });
     }
 
     const user = await db.User.findByPk(userId, {
@@ -159,7 +153,7 @@ export const getUserById = async (req: Request, res: Response) => {
 
     let follow_status = 'none';
     if (isFollowing && isFollower) follow_status = 'followed';
-    else if (isFollowing) follow_status = 'pending';
+    else if (isFollowing) follow_status = 'requested';
     else if (isFollower) follow_status = 'follow_back';
 
     res.status(200).json({

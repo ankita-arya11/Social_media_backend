@@ -131,7 +131,7 @@ export const addFollowing = async (
     ) {
       follow_status = 'followed';
     } else if (updatedFollowings.includes(followingIdNum)) {
-      follow_status = 'pending';
+      follow_status = 'requested';
     } else if (updatedFollowers.includes(followingIdNum)) {
       follow_status = 'follow_back';
     }
@@ -155,17 +155,19 @@ export const getFollowings = async (
   res: Response
 ): Promise<Response> => {
   try {
+    const currentUserId = req?.user?.id;
+
     const userId = req?.params?.userId;
 
-    const currentUserId = parseInt(userId, 10);
-    if (isNaN(currentUserId)) {
+    const userIdNum = parseInt(userId, 10);
+    if (isNaN(userIdNum)) {
       return res
         .status(400)
         .json({ message: 'User ID must be a valid number' });
     }
 
     const followingList = await db.FollowingList.findOne({
-      where: { userId: currentUserId },
+      where: { userId: userIdNum },
     });
     if (!followingList) {
       return res.status(404).json({ message: 'Following list not found' });
@@ -177,11 +179,19 @@ export const getFollowings = async (
         .status(200)
         .json({ message: 'No followings found', following: [] });
     }
-
-    const followerList = await db.FollowerList.findOne({
+    const currentUserFollowingList = await db.FollowingList.findOne({
       where: { userId: currentUserId },
     });
-    const followerUserIds = followerList ? followerList.followers : [];
+    const currentUserFollowerList = await db.FollowerList.findOne({
+      where: { userId: currentUserId },
+    });
+
+    const currentUserFollowingIds = currentUserFollowingList
+      ? currentUserFollowingList.following
+      : [];
+    const currentUserFollowerIds = currentUserFollowerList
+      ? currentUserFollowerList.followers
+      : [];
 
     const followingUsers = await db.User.findAll({
       where: { id: followingUserIds },
@@ -208,13 +218,13 @@ export const getFollowings = async (
     const updatedFollowings = followingUsers.map((user: any) => {
       let follow_status = 'none';
       if (
-        followerUserIds.includes(user.id) &&
-        followingUserIds.includes(user.id)
+        currentUserFollowingIds.includes(user.id) &&
+        currentUserFollowerIds.includes(user.id)
       ) {
         follow_status = 'followed';
-      } else if (followingUserIds.includes(user.id)) {
-        follow_status = 'pending';
-      } else if (followerUserIds.includes(user.id)) {
+      } else if (currentUserFollowingIds.includes(user.id)) {
+        follow_status = 'requested';
+      } else if (currentUserFollowerIds.includes(user.id)) {
         follow_status = 'follow_back';
       }
       return { ...user.toJSON(), follow_status };
@@ -238,6 +248,7 @@ export const getFollowers = async (
   res: Response
 ): Promise<Response> => {
   try {
+    const currentUserId = req?.user?.id;
     const { userId } = req.params;
     const userIdNum = parseInt(userId, 10);
 
@@ -262,10 +273,10 @@ export const getFollowers = async (
     }
 
     const currentUserFollowingList = await db.FollowingList.findOne({
-      where: { userId: userIdNum },
+      where: { userId: currentUserId },
     });
     const currentUserFollowerList = await db.FollowerList.findOne({
-      where: { userId: userIdNum },
+      where: { userId: currentUserId },
     });
 
     const currentUserFollowingIds = currentUserFollowingList
@@ -305,7 +316,7 @@ export const getFollowers = async (
       ) {
         follow_status = 'followed';
       } else if (currentUserFollowingIds.includes(user.id)) {
-        follow_status = 'pending';
+        follow_status = 'requested';
       } else if (currentUserFollowerIds.includes(user.id)) {
         follow_status = 'follow_back';
       }
@@ -407,7 +418,7 @@ export const removeFollowing = async (
     ) {
       follow_status = 'followed';
     } else if (updatedFollowings.includes(followingIdNum)) {
-      follow_status = 'pending';
+      follow_status = 'requested';
     } else if (updatedFollowers.includes(followingIdNum)) {
       follow_status = 'follow_back';
     }
