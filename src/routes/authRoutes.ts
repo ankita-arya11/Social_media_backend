@@ -28,6 +28,7 @@ import {
   latestUsers,
   getConnectedUser,
   isUserConnected,
+  updateUserPermissions,
 } from '../controllers/userController';
 import { profileUpdate } from '../controllers/profileUpdate';
 import {
@@ -51,6 +52,7 @@ import {
   isMyNotification,
   isNewMessage,
 } from '../controllers/notificationController';
+import { isAdmin } from '../middlewares/adminCheck';
 
 const router = express.Router();
 
@@ -81,8 +83,8 @@ router.get('/latest-users', authenticate, latestUsers);
 router.get('/get-followings/:userId', authenticate, getFollowings);
 router.get('/get-followers/:userId', authenticate, getFollowers);
 router.post('/remove-following', authenticate, removeFollowing);
-// router.post('/remove-follower', authenticate, removeFollower);
-router.get('/search-user/:username', authenticate, searchUser);
+router.post('/remove-follower', authenticate, removeFollower);
+router.get('/search-user/:query', authenticate, searchUser);
 router.get('/latest-posts', authenticate, latestPosts);
 router.get('/search/:query', authenticate, searchQuery);
 router.get(
@@ -94,7 +96,7 @@ router.post('/create-event', authenticate, createEvent);
 router.get('/get-events', authenticate, getEvents);
 router.delete('/delete-event/:eventId', authenticate, deleteEvent);
 router.put('/edit-post/:postId', authenticate, editPost);
-router.get('/get-connected-user/:userId', authenticate, getConnectedUser);
+router.get('/get-connected-user', authenticate, getConnectedUser);
 router.get('/get-messages/:senderId/:receiverId', authenticate, getMessages);
 router.get(
   '/is-user-connected/:userId/:followingId',
@@ -105,5 +107,14 @@ router.delete('/delete-message/:messageId', authenticate, deleteMessage);
 router.get('/is-my-notification', authenticate, isMyNotification);
 router.get('/get-my-notification', authenticate, getMyNotification);
 router.get('/is-new-message', authenticate, isNewMessage);
+
+//Admin routes
+
+router.post(
+  '/users/:userId/permissions',
+  authenticate,
+  isAdmin,
+  updateUserPermissions
+);
 
 export default router;
