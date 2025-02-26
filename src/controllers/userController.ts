@@ -171,47 +171,44 @@ export const getUserById = async (req: Request, res: Response) => {
 
 export const searchUser = async (req: Request, res: Response) => {
   try {
-    const { username } = req.params;
+    const currentUser = (req as any)?.user;
+    const { query } = req.params;
 
-    if (
-      !username ||
-      typeof username !== 'string' ||
-      username.trim().length === 0
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Valid username is required' });
+    if (!query || query.trim() === '') {
+      return res.status(400).json({
+        message: 'Search query is required',
+      });
     }
 
-    const user = await db.User.findOne({
-      where: { username },
-      attributes: [
-        'id',
-        'username',
-        'full_name',
-        'profile_picture',
-        'other_data',
-        'cover_picture',
-        'location',
-        'job_title',
-        'university',
-        'bio',
-        'friends',
-        'followings',
-        'posts',
-        'role',
-      ],
+    const users = await db.User.findAll({
+      where: {
+        [Op.and]: [
+          {
+            id: {
+              [Op.ne]: currentUser?.id,
+            },
+          },
+          {
+            [Op.or]: [
+              {
+                username: {
+                  [Op.iLike]: `%${query}%`,
+                },
+              },
+              {
+                full_name: {
+                  [Op.iLike]: `%${query}%`,
+                },
+              },
+            ],
+          },
+        ],
+      },
     });
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'User not found' });
-    }
 
     return res.status(200).json({
       success: true,
-      user,
+      users,
     });
   } catch (error) {
     console.error('Error searching user by username:', error);
@@ -259,7 +256,7 @@ export const getConnectedUser = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { userId } = req.params;
+  const userId = (req as any)?.user?.id;
 
   try {
     const followerList = await db.FollowerList.findOne({
@@ -359,5 +356,34 @@ export const isUserConnected = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error checking user connection:', error);
     return res.status(500).json({ message: 'Failed to check connection' });
+  }
+};
+
+export const updateUserPermissions = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+    const { permissions, role } = req.body;
+
+    if (!userId || (!permissions && !role)) {
+      return res.status(400).json({ message: 'Invalid request data' });
+    }
+
+    const user = await db.User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    await user.update({ role, permissions });
+
+    return res.status(200).json({
+      message: 'User permissions updated successfully',
+      user,
+    });
+  } catch (error) {
+    console.error('Error in updating user permissions:', error);
+    return res
+      .status(500)
+      .json({ message: 'Failed to update user permissions' });
   }
 };
